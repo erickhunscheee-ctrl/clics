@@ -3,7 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
-import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight } from "lucide-react";
+import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, Camera, MousePointerClick, ShoppingCart, Lightbulb, ShieldCheck, Heart } from "lucide-react";
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,21 @@ export default async function Home() {
     },
     orderBy: { eventDate: "desc" },
   });
+
+  const brandConcepts = [
+    { label: "fotografia", icon: Camera },
+    { label: "clique", icon: MousePointerClick },
+    { label: "venda", icon: ShoppingCart },
+    { label: "criatividade", icon: Lightbulb },
+    { label: "confianca", icon: ShieldCheck },
+  ];
+
+  const visualStyles = [
+    { title: "Moderna", text: "Design atual, limpo e alinhado ao digital.", icon: Sparkles },
+    { title: "Criativa", text: "Estimula ideias, inspira e conecta.", icon: Lightbulb },
+    { title: "Confiavel", text: "Seguranca e credibilidade em cada clique.", icon: ShieldCheck },
+    { title: "Simples", text: "Experiencia intuitiva, focada no essencial.", icon: Heart },
+  ];
 
   return (
     <div className="min-h-screen" style={{ background: "#F6F8FC", color: "#061337", fontFamily: "var(--font-inter, Inter, sans-serif)" }}>
@@ -157,9 +172,127 @@ export default async function Home() {
           CONTEÚDO — Galeria de Álbuns
       ═══════════════════════════════════════════ */}
       <main className="container mx-auto px-4 py-10 max-w-6xl space-y-12 pb-28 md:pb-10">
+        <section className="relative overflow-hidden rounded-[2rem] border border-white bg-white px-6 py-10 text-center shadow-[0_24px_80px_rgba(6,19,55,0.08)] md:px-12 md:py-14">
+          <div className="absolute left-1/2 top-0 h-1 w-14 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#159BEF] to-[#7B3FF2]" />
+          <div className="absolute -left-24 top-16 h-56 w-56 rounded-full bg-[#159BEF]/10 blur-3xl" />
+          <div className="absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-[#7B3FF2]/10 blur-3xl" />
+
+          <div className="relative mx-auto flex max-w-4xl flex-col items-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#7B3FF2]">
+              Marketplace de fotos
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-6 sm:flex-row">
+              <Image
+                src="/logo_clics.png"
+                alt="CLICS"
+                width={152}
+                height={152}
+                className="h-28 w-28 object-contain drop-shadow-[0_18px_40px_rgba(21,155,239,0.2)] sm:h-36 sm:w-36"
+                priority
+              />
+              <span
+                className="text-6xl font-semibold tracking-[0.28em] text-[#061337] sm:text-7xl md:text-8xl"
+                style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}
+              >
+                CLICS
+              </span>
+            </div>
+            <h1 className="mt-8 text-3xl font-black tracking-tight text-[#061337] md:text-5xl">
+              Transforme seus{" "}
+              <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">
+                clics
+              </span>{" "}
+              em vendas.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 md:text-lg">
+              Compre, venda e descubra fotos em uma experiencia simples, segura e feita para valorizar cada imagem.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="#albuns"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] px-6 py-3 text-sm font-bold text-white shadow-[0_16px_36px_rgba(21,155,239,0.24)] transition hover:-translate-y-0.5"
+              >
+                Comprar fotos <ShoppingCart size={16} />
+              </Link>
+              <Link
+                href={sellerHref}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#7B3FF2]/40 bg-white px-6 py-3 text-sm font-bold text-[#7B3FF2] transition hover:-translate-y-0.5 hover:border-[#7B3FF2]"
+              >
+                Vender fotos <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
+          <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#061337]">
+              1. Conceito da marca
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+              {brandConcepts.map(({ label, icon: Icon }) => (
+                <div key={label} className="text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#7B3FF2] shadow-[0_10px_30px_rgba(6,19,55,0.08)] ring-1 ring-slate-100">
+                    <Icon size={26} strokeWidth={1.8} />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-[#061337]">{label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-7 text-sm leading-relaxed text-slate-500">
+              Plataforma para comprar, vender e descobrir fotos com uma identidade moderna, clara e confiavel.
+            </p>
+          </div>
+
+          <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#061337]">
+              2. Paleta de cores
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+              {[
+                ["Azul CLICS", "#159BEF"],
+                ["Roxo CLICS", "#7B3FF2"],
+                ["Navy", "#061337"],
+                ["Cinza Claro", "#F6F8FC"],
+                ["Branco", "#FFFFFF"],
+              ].map(([name, color]) => (
+                <div key={name}>
+                  <div className="h-20 rounded-2xl border border-slate-200 shadow-inner" style={{ background: color }} />
+                  <p className="mt-3 text-sm font-semibold text-[#061337]">{name}</p>
+                  <p className="mt-1 text-xs text-slate-400">{color}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-7">
+              <p className="text-sm font-semibold text-[#061337]">Gradiente da marca</p>
+              <div className="mt-2 h-6 rounded-full bg-gradient-to-r from-[#159BEF] to-[#7B3FF2]" />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#061337]">
+            3. Estilo visual
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {visualStyles.map(({ title, text, icon: Icon }) => (
+              <div key={title} className="rounded-2xl bg-white p-4 shadow-[0_10px_30px_rgba(6,19,55,0.06)] ring-1 ring-slate-100">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7B3FF2]/10 text-[#7B3FF2]">
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#061337]">{title}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{text}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Hero Section */}
-        <section className="text-center max-w-3xl mx-auto space-y-5 pt-4">
+        <section className="hidden text-center max-w-3xl mx-auto space-y-5 pt-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide uppercase"
             style={{ background: "rgba(21,155,239,0.08)", borderColor: "rgba(21,155,239,0.25)", color: "#159BEF" }}>
             <Sparkles size={12} /> Adquira suas fotos em alta resolução
@@ -176,7 +309,7 @@ export default async function Home() {
         </section>
 
         {/* Albums Grid */}
-        <section className="space-y-6">
+        <section id="albuns" className="space-y-6 scroll-mt-28">
           <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "#e5e7eb" }}>
             <h2 className="text-base font-semibold uppercase tracking-wider" style={{ color: "#9ca3af", fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}>
               Álbuns disponíveis ({albums.length})
