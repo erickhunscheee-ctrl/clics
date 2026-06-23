@@ -38,16 +38,15 @@ export async function POST(request: Request, { params }: Params) {
     assertOwnership(user.id, album.photographerId);
 
     // 1. Converte o arquivo para Buffer
-    let arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = await file.arrayBuffer();
     
-    // Se for SharedArrayBuffer (comum em alguns runtimes da Vercel/Node.js), convertemos para ArrayBuffer padrão
-    if (typeof SharedArrayBuffer !== "undefined" && arrayBuffer instanceof SharedArrayBuffer) {
-      const bufferCopy = new ArrayBuffer((arrayBuffer as any).byteLength);
-      new Uint8Array(bufferCopy).set(new Uint8Array(arrayBuffer));
-      arrayBuffer = bufferCopy;
-    }
+    // Aloca um novo Buffer padrão do Node.js e copia os bytes.
+    // Isso garante 100% que não estamos repassando um SharedArrayBuffer
+    // (que pode falhar na verificação cross-realm com instanceof)
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const originalBuffer = Buffer.alloc(uint8Array.length);
+    originalBuffer.set(uint8Array);
 
-    const originalBuffer = Buffer.from(arrayBuffer);
     const originalFileName = file.name;
     const originalMimeType = file.type;
 
