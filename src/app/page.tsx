@@ -31,10 +31,10 @@ export default async function Home() {
         <div className="hidden md:flex items-center justify-between bg-white rounded-2xl shadow-sm px-6 py-3.5 max-w-6xl mx-auto" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <Image src="/logo_clic.png" alt="CLICS" width={40} height={40} className="w-10 h-10 object-contain" />
-            <span className="text-2xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
+            <Image src="/logo_clics.png" alt="CLICS" width={40} height={40} className="w-10 h-10 object-contain" />
+            {/* <span className="text-2xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
               CLICS
-            </span>
+            </span> */}
           </Link>
 
           {/* Nav links */}
@@ -71,7 +71,7 @@ export default async function Home() {
                   Meu painel
                 </Link>
                 <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center"
-                     style={{ background: "linear-gradient(135deg, #159BEF, #7B3FF2)" }}>
+                  style={{ background: "linear-gradient(135deg, #159BEF, #7B3FF2)" }}>
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
@@ -106,10 +106,10 @@ export default async function Home() {
             {/* Top row: Logo + Icons */}
             <div className="flex items-center justify-between mb-3">
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/logo_clic.png" alt="CLICS" width={36} height={36} className="w-9 h-9 object-contain" />
-                <span className="text-xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
+                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-9 h-9 object-contain" />
+                {/* <span className="text-xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                   CLICS
-                </span>
+                </span> */}
               </Link>
 
               <div className="flex items-center gap-4">
@@ -157,7 +157,7 @@ export default async function Home() {
         {/* Hero Section */}
         <section className="text-center max-w-3xl mx-auto space-y-5 pt-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide uppercase"
-               style={{ background: "rgba(21,155,239,0.08)", borderColor: "rgba(21,155,239,0.25)", color: "#159BEF" }}>
+            style={{ background: "rgba(21,155,239,0.08)", borderColor: "rgba(21,155,239,0.25)", color: "#159BEF" }}>
             <Sparkles size={12} /> Adquira suas fotos em alta resolução
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
@@ -208,11 +208,11 @@ export default async function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-lg"
-                            style={{ background: "rgba(21,155,239,0.85)", backdropFilter: "blur(4px)" }}>
+                        style={{ background: "rgba(21,155,239,0.85)", backdropFilter: "blur(4px)" }}>
                         {album._count.photos} fotos
                       </span>
                       <span className="text-[10px] font-bold text-white px-2.5 py-1 rounded-lg"
-                            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
                         A partir de {formatCurrency(album.defaultPhotoPrice)}
                       </span>
                     </div>
@@ -221,7 +221,7 @@ export default async function Home() {
                   {/* Info */}
                   <div className="p-5 flex flex-col gap-3 flex-1">
                     <h3 className="font-bold text-base line-clamp-1 group-hover:text-[#159BEF] transition-colors"
-                        style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
+                      style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                       {album.title}
                     </h3>
                     {album.description && (
@@ -265,7 +265,7 @@ export default async function Home() {
       <footer className="border-t py-10 mt-8" style={{ background: "white", borderColor: "#e5e7eb" }}>
         <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: "#9ca3af" }}>
           <div className="flex items-center gap-2">
-            <Image src="/logo_clic.png" alt="CLICS" width={24} height={24} className="w-6 h-6 object-contain" />
+            <Image src="/logo_clics.png" alt="CLICS" width={24} height={24} className="w-6 h-6 object-contain" />
             <span>&copy; {new Date().getFullYear()} CLICS. Todos os direitos reservados.</span>
           </div>
           <Link
