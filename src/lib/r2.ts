@@ -26,11 +26,17 @@ export async function uploadPreviewToR2(
   key: string,
   contentType: string
 ): Promise<string> {
+  // AWS SDK v3 fails if the underlying buffer is a SharedArrayBuffer (common in Vercel with Sharp).
+  // We force a copy into a standard ArrayBuffer-backed Uint8Array.
+  const safeArrayBuffer = new ArrayBuffer(buffer.length);
+  const safeUint8Array = new Uint8Array(safeArrayBuffer);
+  safeUint8Array.set(new Uint8Array(buffer));
+
   await s3Client.send(
     new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,
-      Body: buffer,
+      Body: safeUint8Array,
       ContentType: contentType,
       CacheControl: "public, max-age=31536000, immutable",
     })
