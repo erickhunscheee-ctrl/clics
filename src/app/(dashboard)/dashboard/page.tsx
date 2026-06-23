@@ -1,8 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
+import { Prisma } from "@prisma/client";
 import { Camera, FolderOpen, DollarSign, Receipt, Eye } from "lucide-react";
 import Link from "next/link";
+
+type OrderWithAlbum = Prisma.OrderGetPayload<{
+  include: { album: { select: { title: true } } };
+}>;
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -133,7 +138,7 @@ export default async function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-900">
-                  {orders.map((order) => (
+                  {orders.map((order: OrderWithAlbum) => (
                     <tr key={order.id} className="hover:bg-zinc-900/20 transition-colors">
                       <td className="py-4">
                         <div className="font-medium text-white">{order.customerName}</div>
