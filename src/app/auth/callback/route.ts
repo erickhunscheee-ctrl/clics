@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const requestedRole = searchParams.get("role") === "photographer" ? "PHOTOGRAPHER" : "BUYER";
 
   if (code) {
     try {
@@ -32,14 +33,14 @@ export async function GET(request: Request) {
             name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
             email: supabaseUser.email!,
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
-            role: "PHOTOGRAPHER",
+            role: requestedRole,
           },
         });
 
         const baseUrl = process.env.APP_URL || origin;
         return NextResponse.redirect(`${baseUrl}${next}`);
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error("Erro fatal no callback de autenticacao:", e);
     }
   }

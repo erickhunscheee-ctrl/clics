@@ -35,7 +35,7 @@ export default function RegisterPage() {
         data: {
           full_name: name,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?role=photographer`,
       },
     });
 
@@ -57,6 +57,7 @@ export default function RegisterPage() {
             supabaseUserId: data.user.id,
             name,
             email,
+            role: "PHOTOGRAPHER",
           }),
         });
 
@@ -79,7 +80,7 @@ export default function RegisterPage() {
     const { error: googleError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?role=photographer`,
       },
     });
 

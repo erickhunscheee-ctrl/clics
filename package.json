@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
+    "clean:next": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$target = Join-Path (Get-Location) '.next'; if ((Resolve-Path -LiteralPath $target -ErrorAction SilentlyContinue).Path -like ((Get-Location).Path + '*')) { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue }\"",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"

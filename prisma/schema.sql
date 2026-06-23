@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'PHOTOGRAPHER');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'BUYER', 'PHOTOGRAPHER');
 
 -- CreateEnum
 CREATE TYPE "AlbumStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
@@ -20,7 +20,7 @@ CREATE TABLE "users" (
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "avatarUrl" TEXT,
-    "role" "UserRole" NOT NULL DEFAULT 'PHOTOGRAPHER',
+    "role" "UserRole" NOT NULL DEFAULT 'BUYER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

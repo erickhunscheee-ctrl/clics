@@ -11,7 +11,8 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { items, removeFromCart, clearCart, totalAmount } = useCart();
+  const { items, albumSlug, removeFromCart, clearCart, totalAmount } = useCart();
+  const checkoutHref = albumSlug ? `/checkout?album=${albumSlug}` : "/checkout";
 
   if (!isOpen) return null;
 
@@ -115,7 +116,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 </p>
                 <div className="pt-2">
                   <Link
-                    href="/checkout"
+                    href={checkoutHref}
                     onClick={onClose}
                     className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 py-3 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all text-center"
                   >

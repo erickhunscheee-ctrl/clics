@@ -1,15 +1,37 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { formatCurrency } from "@/lib/money";
 import { ShoppingBag, ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function CheckoutPage() {
-  const { items, albumId, totalAmount, clearCart } = useCart();
-  const router = useRouter();
+  return (
+    <Suspense fallback={<CheckoutFallback />}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutFallback() {
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6 text-center">
+      <div className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-300">
+        <Loader2 className="animate-spin text-violet-400" size={18} />
+        Carregando checkout...
+      </div>
+    </div>
+  );
+}
+
+function CheckoutContent() {
+  const { items, albumId, albumSlug, totalAmount, clearCart } = useCart();
+  const searchParams = useSearchParams();
+  const returnAlbumSlug = albumSlug || searchParams.get("album");
+  const galleryHref = returnAlbumSlug ? `/album/${returnAlbumSlug}` : "/";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,9 +76,9 @@ export default function CheckoutPage() {
 
       // Redireciona o usuário para o checkout do Mercado Pago
       window.location.href = checkoutUrl;
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Ocorreu um erro ao processar seu pagamento. Tente novamente.");
+      setError(err instanceof Error ? err.message : "Ocorreu um erro ao processar seu pagamento. Tente novamente.");
       setLoading(false);
     }
   };
@@ -71,13 +93,13 @@ export default function CheckoutPage() {
         <p className="text-zinc-500 max-w-sm mx-auto mb-6 text-sm">
           Você não possui nenhuma foto no carrinho de compras. Retorne à galeria do álbum para selecionar suas fotos.
         </p>
-        <button
-          onClick={() => router.back()}
+        <Link
+          href={galleryHref}
           className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 font-semibold transition-colors"
         >
           <ArrowLeft size={16} />
           Voltar para a Galeria
-        </button>
+        </Link>
       </div>
     );
   }
@@ -88,12 +110,13 @@ export default function CheckoutPage() {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-900 pb-6">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
+            <Link
+              href={galleryHref}
               className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white transition-all border border-zinc-800"
+              aria-label="Voltar para a galeria"
             >
               <ArrowLeft size={16} />
-            </button>
+            </Link>
             <div>
               <h1 className="text-2xl font-black text-white">Finalizar Compra</h1>
               <p className="text-zinc-500 text-xs mt-0.5">Preencha seus dados para receber as fotos.</p>

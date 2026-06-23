@@ -12,7 +12,8 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   albumId: string | null;
-  addToCart: (albumId: string, item: CartItem) => void;
+  albumSlug: string | null;
+  addToCart: (albumId: string, item: CartItem, albumSlug?: string) => void;
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
   isInCart: (itemId: string) => boolean;
@@ -24,23 +25,29 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [albumId, setAlbumId] = useState<string | null>(null);
+  const [albumSlug, setAlbumSlug] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Carrega o carrinho do localStorage ao iniciar
   useEffect(() => {
-    try {
-      const storedCart = localStorage.getItem("antigravity_fotos_cart");
-      if (storedCart) {
-        const parsed = JSON.parse(storedCart);
-        if (parsed.albumId && Array.isArray(parsed.items)) {
-          setAlbumId(parsed.albumId);
-          setItems(parsed.items);
+    const timeoutId = window.setTimeout(() => {
+      try {
+        const storedCart = localStorage.getItem("antigravity_fotos_cart");
+        if (storedCart) {
+          const parsed = JSON.parse(storedCart);
+          if (parsed.albumId && Array.isArray(parsed.items)) {
+            setAlbumId(parsed.albumId);
+            setAlbumSlug(parsed.albumSlug ?? null);
+            setItems(parsed.items);
+          }
         }
+      } catch (e) {
+        console.error("Erro ao carregar carrinho do localStorage:", e);
       }
-    } catch (e) {
-      console.error("Erro ao carregar carrinho do localStorage:", e);
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   // Salva no localStorage quando o estado mudar
@@ -49,14 +56,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(
         "antigravity_fotos_cart",
-        JSON.stringify({ albumId, items })
+        JSON.stringify({ albumId, albumSlug, items })
       );
     } catch (e) {
       console.error("Erro ao salvar carrinho no localStorage:", e);
     }
-  }, [items, albumId, isLoaded]);
+  }, [items, albumId, albumSlug, isLoaded]);
 
-  const addToCart = (newAlbumId: string, item: CartItem) => {
+  const addToCart = (newAlbumId: string, item: CartItem, newAlbumSlug?: string) => {
     // Se o usuário mudar de álbum, limpa o carrinho antigo para evitar compras multi-álbum no mesmo pedido
     if (albumId && albumId !== newAlbumId) {
       if (
@@ -65,6 +72,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         )
       ) {
         setAlbumId(newAlbumId);
+        setAlbumSlug(newAlbumSlug ?? null);
         setItems([item]);
       }
       return;
@@ -72,6 +80,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (!albumId) {
       setAlbumId(newAlbumId);
+    }
+    if (newAlbumSlug && albumSlug !== newAlbumSlug) {
+      setAlbumSlug(newAlbumSlug);
     }
 
     setItems((prev) => {
@@ -85,6 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const updated = prev.filter((item) => item.id !== itemId);
       if (updated.length === 0) {
         setAlbumId(null);
+        setAlbumSlug(null);
       }
       return updated;
     });
@@ -93,6 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => {
     setItems([]);
     setAlbumId(null);
+    setAlbumSlug(null);
   };
 
   const isInCart = (itemId: string) => {
@@ -106,6 +119,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         albumId,
+        albumSlug,
         addToCart,
         removeFromCart,
         clearCart,

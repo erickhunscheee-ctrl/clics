@@ -10,6 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const user = await getCurrentUser();
+  const userHomeHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/usuario";
+  const userHomeLabel = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "Painel fotografo" : "Minha area";
+  const sellerHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/cadastro";
 
   const albums = await prisma.album.findMany({
     where: { status: "PUBLISHED" },
@@ -43,7 +46,7 @@ export default async function Home() {
             {["Explorar", "Categorias", "Vender fotos", "Como funciona"].map((item) => (
               <Link
                 key={item}
-                href={item === "Explorar" ? "/" : item === "Categorias" ? "/#categorias" : item === "Vender fotos" ? "/dashboard" : "/#como-funciona"}
+                href={item === "Explorar" ? "/" : item === "Categorias" ? "/#categorias" : item === "Vender fotos" ? sellerHref : "/#como-funciona"}
                 className="text-sm font-medium transition-colors hover:text-[#159BEF]"
                 style={{ color: "#061337" }}
               >
@@ -65,11 +68,11 @@ export default async function Home() {
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
-                  href="/dashboard"
+                  href={userHomeHref}
                   className="text-sm font-semibold px-4 py-2 rounded-full border transition-colors hover:bg-gray-50"
                   style={{ color: "#061337", borderColor: "#d1d5db" }}
                 >
-                  Meu painel
+                  {userHomeLabel}
                 </Link>
                 <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, #159BEF, #7B3FF2)" }}>
@@ -121,7 +124,7 @@ export default async function Home() {
                   <Bell size={22} style={{ color: "#061337" }} />
                 </button>
                 {user ? (
-                  <Link href="/dashboard" aria-label="Meu perfil" className="transition-opacity hover:opacity-70">
+                  <Link href={userHomeHref} aria-label="Meu perfil" className="transition-opacity hover:opacity-70">
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
                     ) : (

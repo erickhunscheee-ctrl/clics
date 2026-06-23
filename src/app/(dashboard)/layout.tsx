@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { redirect } from "next/navigation";
 
@@ -9,9 +9,9 @@ export default async function DashboardLayout({
 }) {
   let user;
   try {
-    user = await requireUser();
-  } catch (error) {
-    redirect("/login");
+    user = await requirePhotographer();
+  } catch {
+    redirect("/");
   }
 
   return (

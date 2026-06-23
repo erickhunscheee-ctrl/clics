@@ -1,20 +1,20 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/money";
+import { getPaymentDetails, mapPaymentStatus } from "@/lib/mercadopago";
 import { CheckCircle2, Clock, XCircle, Download, CreditCard, ShoppingBag, Phone, Mail, User } from "lucide-react";
-import Link from "next/link";
 
 interface OrderPageProps {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; payment_id?: string; collection_id?: string }>;
 }
 
 export default async function OrderPage({ params, searchParams }: OrderPageProps) {
   const { token } = await params;
-  const { status: queryStatus } = await searchParams;
+  const { payment_id: paymentId, collection_id: collectionId } = await searchParams;
 
   // Busca o pedido pelo token com suas fotos e itens
-  const order = await prisma.order.findUnique({
+  let order = await prisma.order.findUnique({
     where: { accessToken: token },
     include: {
       album: {
@@ -40,6 +40,45 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
 
   if (!order) {
     notFound();
+  }
+
+  const returnedPaymentId = paymentId || collectionId;
+  if (returnedPaymentId && order.status === "PENDING") {
+    try {
+      const paymentDetails = await getPaymentDetails(returnedPaymentId);
+      if (paymentDetails.externalReference === order.id) {
+        const nextStatus = mapPaymentStatus(paymentDetails.status || "");
+        order = await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: nextStatus,
+            mercadoPagoPaymentId: returnedPaymentId,
+          },
+          include: {
+            album: {
+              select: {
+                title: true,
+                coverImageUrl: true,
+              },
+            },
+            items: {
+              include: {
+                photo: {
+                  select: {
+                    id: true,
+                    originalFileName: true,
+                    previewUrl: true,
+                    price: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar retorno do Mercado Pago:", error);
+    }
   }
 
   // Verifica se o token expirou

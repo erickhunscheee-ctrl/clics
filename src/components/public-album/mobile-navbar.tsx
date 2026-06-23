@@ -30,7 +30,7 @@ const navItems = [
   },
   {
     label: "Perfil",
-    href: "/login",
+    href: "/usuario",
     icon: User,
     circled: true,
   },

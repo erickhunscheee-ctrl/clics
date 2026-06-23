@@ -23,7 +23,7 @@ export async function getCurrentUser() {
       name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
       email: supabaseUser.email!,
       avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
-      role: "PHOTOGRAPHER",
+      role: "BUYER",
     },
   });
 
@@ -38,6 +38,16 @@ export async function requireUser() {
 
   if (!user) {
     throw new Error("Não autenticado");
+  }
+
+  return user;
+}
+
+export async function requirePhotographer() {
+  const user = await requireUser();
+
+  if (user.role !== "PHOTOGRAPHER" && user.role !== "ADMIN") {
+    throw new Error("Acesso restrito a fotógrafos");
   }
 
   return user;

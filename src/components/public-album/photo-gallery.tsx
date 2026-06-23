@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCart, CartItem } from "@/components/cart/cart-provider";
+import { useCart } from "@/components/cart/cart-provider";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { formatCurrency } from "@/lib/money";
 import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,6 +15,7 @@ interface Photo {
 
 interface Album {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   eventDate: Date | null;
@@ -50,7 +51,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
         originalFileName: photo.originalFileName,
         previewUrl: photo.previewUrl,
         price: photo.price,
-      });
+      }, album.slug);
     }
   };
 
