@@ -23,6 +23,7 @@ interface Album {
 export default function AlbunsListPage() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadAlbums() {
@@ -31,9 +32,13 @@ export default function AlbunsListPage() {
         if (res.ok) {
           const data = await res.json();
           setAlbums(data);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setError(data.message || `Erro ${res.status} ao carregar álbuns.`);
         }
-      } catch (error) {
-        console.error("Erro ao carregar álbuns:", error);
+      } catch (err: any) {
+        setError(err.message || "Erro de rede ao carregar álbuns.");
+        console.error("Erro ao carregar álbuns:", err);
       } finally {
         setLoading(false);
       }
@@ -63,6 +68,11 @@ export default function AlbunsListPage() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-zinc-900/40 border border-zinc-800 h-64 rounded-2xl animate-pulse" />
           ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-20 bg-red-500/5 backdrop-blur-md border border-red-500/20 rounded-3xl space-y-3">
+          <p className="text-red-400 font-semibold">Erro ao carregar álbuns</p>
+          <p className="text-zinc-500 text-sm">{error}</p>
         </div>
       ) : albums.length === 0 ? (
         <div className="text-center py-20 bg-zinc-900/20 backdrop-blur-md border border-zinc-800 rounded-3xl space-y-4">
