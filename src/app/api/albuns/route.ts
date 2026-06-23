@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { slugify } from "@/lib/slug";
+import { generateUniqueSlug } from "@/lib/slug";
 import { albumSchema } from "@/lib/validators/album";
 
 // GET /api/albuns - Listar álbuns do fotógrafo autenticado
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const validatedData = albumSchema.parse(body);
 
     // Gera um slug único a partir do título do álbum
-    const slug = await slugify(validatedData.title);
+    const slug = await generateUniqueSlug(validatedData.title);
 
     // Cria o álbum no banco de dados
     const album = await prisma.album.create({
