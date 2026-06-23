@@ -3,7 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
-import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, Camera, MousePointerClick, ShoppingCart, Lightbulb, ShieldCheck, Heart } from "lucide-react";
+import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, ShoppingCart } from "lucide-react";
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 
 export const dynamic = "force-dynamic";
@@ -23,20 +23,8 @@ export default async function Home() {
     orderBy: { eventDate: "desc" },
   });
 
-  const brandConcepts = [
-    { label: "fotografia", icon: Camera },
-    { label: "clique", icon: MousePointerClick },
-    { label: "venda", icon: ShoppingCart },
-    { label: "criatividade", icon: Lightbulb },
-    { label: "confianca", icon: ShieldCheck },
-  ];
-
-  const visualStyles = [
-    { title: "Moderna", text: "Design atual, limpo e alinhado ao digital.", icon: Sparkles },
-    { title: "Criativa", text: "Estimula ideias, inspira e conecta.", icon: Lightbulb },
-    { title: "Confiavel", text: "Seguranca e credibilidade em cada clique.", icon: ShieldCheck },
-    { title: "Simples", text: "Experiencia intuitiva, focada no essencial.", icon: Heart },
-  ];
+  const brandConcepts: Array<{ label: string; icon: typeof Sparkles }> = [];
+  const visualStyles: Array<{ title: string; text: string; icon: typeof Sparkles }> = [];
 
   return (
     <div className="min-h-screen" style={{ background: "#F6F8FC", color: "#061337", fontFamily: "var(--font-inter, Inter, sans-serif)" }}>
@@ -198,21 +186,20 @@ export default async function Home() {
               </span>
             </div>
             <h1 className="mt-8 text-3xl font-black tracking-tight text-[#061337] md:text-5xl">
-              Transforme seus{" "}
+              Encontre seu evento e compre suas{" "}
               <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">
-                clics
+                fotos favoritas
               </span>{" "}
-              em vendas.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-500 md:text-lg">
-              Compre, venda e descubra fotos em uma experiencia simples, segura e feita para valorizar cada imagem.
+              Acesse albuns publicados por fotografos, selecione as imagens que deseja e finalize o pagamento com seguranca.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="#albuns"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] px-6 py-3 text-sm font-bold text-white shadow-[0_16px_36px_rgba(21,155,239,0.24)] transition hover:-translate-y-0.5"
               >
-                Comprar fotos <ShoppingCart size={16} />
+                Ver albuns <ShoppingCart size={16} />
               </Link>
               <Link
                 href={sellerHref}
@@ -224,7 +211,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
+        <section className="hidden">
           <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#061337]">
               1. Conceito da marca
@@ -270,7 +257,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
+        <section className="hidden">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#061337]">
             3. Estilo visual
           </p>
