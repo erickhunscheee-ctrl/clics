@@ -31,6 +31,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
+    
+    // Restringe a criação de álbuns ao administrador / email permitido
+    const allowedEmail = process.env.ADMIN_EMAIL;
+    if (user.role !== "ADMIN" && (!allowedEmail || user.email !== allowedEmail)) {
+      return NextResponse.json(
+        { message: "Apenas o administrador do sistema pode criar novos álbuns no momento." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     // Valida os dados de entrada usando Zod

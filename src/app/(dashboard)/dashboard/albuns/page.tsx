@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FolderPlus, Calendar, MapPin, Image as ImageIcon, ExternalLink, Lock } from "lucide-react";
 import { formatCurrency } from "@/lib/money";
+import { createClient } from "@/lib/supabase/client";
 
 interface Album {
   id: string;
@@ -24,6 +25,8 @@ export default function AlbunsListPage() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAllowedToCreate, setIsAllowedToCreate] = useState(false);
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadAlbums() {
@@ -43,7 +46,18 @@ export default function AlbunsListPage() {
         setLoading(false);
       }
     }
+
+    async function checkPermission() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const allowedEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+        const isEmailAllowed = !allowedEmail || user.email === allowedEmail;
+        setIsAllowedToCreate(isEmailAllowed);
+      }
+    }
+
     loadAlbums();
+    checkPermission();
   }, []);
 
   return (
@@ -54,13 +68,15 @@ export default function AlbunsListPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Meus Álbuns</h1>
           <p className="text-zinc-400 mt-1">Crie e gerencie os álbuns de fotos dos seus eventos.</p>
         </div>
-        <Link
-          href="/dashboard/albuns/novo"
-          className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 px-5 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm"
-        >
-          <FolderPlus size={18} />
-          Novo Álbum
-        </Link>
+        {isAllowedToCreate && (
+          <Link
+            href="/dashboard/albuns/novo"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 px-5 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm"
+          >
+            <FolderPlus size={18} />
+            Novo Álbum
+          </Link>
+        )}
       </div>
 
       {loading ? (
@@ -83,12 +99,18 @@ export default function AlbunsListPage() {
           <p className="text-zinc-500 max-w-sm mx-auto text-sm">
             Comece criando o seu primeiro álbum de fotos para disponibilizar aos seus clientes.
           </p>
-          <Link
-            href="/dashboard/albuns/novo"
-            className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors text-sm"
-          >
-            Começar Agora
-          </Link>
+          {isAllowedToCreate ? (
+            <Link
+              href="/dashboard/albuns/novo"
+              className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors text-sm"
+            >
+              Começar Agora
+            </Link>
+          ) : (
+            <p className="text-zinc-500 text-xs font-semibold">
+              Apenas o administrador do sistema pode cadastrar álbuns no momento.
+            </p>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

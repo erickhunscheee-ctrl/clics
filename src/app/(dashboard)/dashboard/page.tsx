@@ -11,6 +11,8 @@ type OrderWithAlbum = Prisma.OrderGetPayload<{
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  const allowedEmail = process.env.ADMIN_EMAIL;
+  const isAllowedToCreate = user.role === "ADMIN" || (allowedEmail && user.email === allowedEmail);
 
   // Busca dados de estatísticas dos álbuns e pedidos do fotógrafo
   const albums = await prisma.album.findMany({
@@ -174,9 +176,11 @@ export default async function DashboardPage() {
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-6 rounded-2xl space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-bold text-white">Meus Álbuns</h2>
-            <Link href="/dashboard/albuns/novo" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
-              + Criar Álbum
-            </Link>
+            {isAllowedToCreate && (
+              <Link href="/dashboard/albuns/novo" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
+                + Criar Álbum
+              </Link>
+            )}
           </div>
 
           {albums.length === 0 ? (
