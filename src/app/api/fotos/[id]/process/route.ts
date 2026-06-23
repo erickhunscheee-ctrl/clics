@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: Params) {
     
     // Se for SharedArrayBuffer (comum em alguns runtimes da Vercel/Node.js), convertemos para ArrayBuffer padrão
     if (typeof SharedArrayBuffer !== "undefined" && arrayBuffer instanceof SharedArrayBuffer) {
-      const bufferCopy = new ArrayBuffer(arrayBuffer.byteLength);
+      const bufferCopy = new ArrayBuffer((arrayBuffer as any).byteLength);
       new Uint8Array(bufferCopy).set(new Uint8Array(arrayBuffer));
       arrayBuffer = bufferCopy;
     }
