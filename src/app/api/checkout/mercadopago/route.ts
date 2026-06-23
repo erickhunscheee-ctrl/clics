@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { albumId, photoIds, customerName, customerEmail, customerPhone, customerDocument } = parsedData.data;
+    const { albumId, photoIds, customerName, customerEmail, customerPhone, customerDocument, paymentMethod } = parsedData.data;
 
     if (photoIds.length === 0) {
       return NextResponse.json(
@@ -103,6 +103,7 @@ export async function POST(request: Request) {
       orderId: order.id,
       orderNumber: order.orderNumber,
       accessToken: order.accessToken,
+      paymentMethod,
       items: mpItems,
       payer: {
         name: customerName,
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
       accessToken: order.accessToken,
       checkoutUrl,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro no processamento do checkout:", error);
     return NextResponse.json(
       { message: "Erro interno do servidor ao iniciar o checkout." },

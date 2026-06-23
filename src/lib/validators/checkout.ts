@@ -7,6 +7,7 @@ export const checkoutSchema = z.object({
   customerEmail: z.string().email("E-mail inválido"),
   customerPhone: z.string().min(10, "Telefone inválido (use o formato com DDD)"),
   customerDocument: z.string().optional().nullable(),
+  paymentMethod: z.enum(["PIX", "CREDIT_CARD"]).default("PIX"),
 });
 
 export type CheckoutSchemaInput = z.infer<typeof checkoutSchema>;

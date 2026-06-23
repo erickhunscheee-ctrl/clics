@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useState } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { formatCurrency } from "@/lib/money";
-import { ShoppingBag, ArrowLeft, Loader2, CreditCard } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Loader2, CreditCard, QrCode } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -38,14 +38,18 @@ function CheckoutContent() {
   const [phone, setPhone] = useState("");
   const [document, setDocument] = useState("");
   
-  const [loading, setLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<"PIX" | "CREDIT_CARD" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+    paymentMethod: "PIX" | "CREDIT_CARD"
+  ) => {
     e.preventDefault();
     if (items.length === 0 || !albumId) return;
+    if (!e.currentTarget.form?.reportValidity()) return;
 
-    setLoading(true);
+    setLoadingMethod(paymentMethod);
     setError(null);
 
     try {
@@ -61,6 +65,7 @@ function CheckoutContent() {
           customerEmail: email,
           customerPhone: phone,
           customerDocument: document || null,
+          paymentMethod,
         }),
       });
 
@@ -79,7 +84,7 @@ function CheckoutContent() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Ocorreu um erro ao processar seu pagamento. Tente novamente.");
-      setLoading(false);
+      setLoadingMethod(null);
     }
   };
 
@@ -134,7 +139,7 @@ function CheckoutContent() {
                 Dados do Comprador
               </h3>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form className="space-y-4">
                 <div>
                   <label className="block text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">
                     Nome Completo
@@ -198,22 +203,49 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={18} />
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      Pagar com Mercado Pago
-                    </>
-                  )}
-                </button>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={loadingMethod !== null}
+                    onClick={(event) => handleSubmit(event, "PIX")}
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+                  >
+                    {loadingMethod === "PIX" ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Gerando Pix...
+                      </>
+                    ) : (
+                      <>
+                        <QrCode size={18} />
+                        Gerar Pix
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={loadingMethod !== null}
+                    onClick={(event) => handleSubmit(event, "CREDIT_CARD")}
+                    className="w-full bg-zinc-950 hover:bg-zinc-900 text-white font-bold py-4 px-6 rounded-xl transition-all border border-zinc-800 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+                  >
+                    {loadingMethod === "CREDIT_CARD" ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Abrindo cartão...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard size={18} />
+                        Pagar com cartão
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  As duas opções são processadas pelo Mercado Pago. No Pix, você será direcionado para gerar o QR Code/copia e cola. No cartão, o Mercado Pago abre o checkout de crédito.
+                </p>
               </form>
             </div>
           </div>

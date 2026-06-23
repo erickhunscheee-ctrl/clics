@@ -8,6 +8,7 @@ interface CreatePreferenceParams {
   orderId: string;
   orderNumber: string;
   accessToken: string;
+  paymentMethod: "PIX" | "CREDIT_CARD";
   items: Array<{
     title: string;
     quantity: number;
@@ -26,6 +27,28 @@ export async function createPaymentPreference(params: CreatePreferenceParams) {
   const appUrl = process.env.APP_URL || "http://localhost:3000";
 
   const preference = new Preference(client);
+  const paymentMethods =
+    params.paymentMethod === "PIX"
+      ? {
+          default_payment_method_id: "pix",
+          excluded_payment_types: [
+            { id: "credit_card" },
+            { id: "debit_card" },
+            { id: "ticket" },
+            { id: "atm" },
+          ],
+          installments: 1,
+        }
+      : {
+          excluded_payment_methods: [{ id: "pix" }],
+          excluded_payment_types: [
+            { id: "bank_transfer" },
+            { id: "debit_card" },
+            { id: "ticket" },
+            { id: "atm" },
+          ],
+          installments: 12,
+        };
 
   const result = await preference.create({
     body: {
@@ -41,6 +64,7 @@ export async function createPaymentPreference(params: CreatePreferenceParams) {
         email: params.payer.email,
       },
       external_reference: params.orderId,
+      payment_methods: paymentMethods,
       back_urls: {
         success: `${appUrl}/pedido/${params.accessToken}?status=success`,
         failure: `${appUrl}/pedido/${params.accessToken}?status=failure`,
