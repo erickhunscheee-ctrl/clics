@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
 import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight } from "lucide-react";
+import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function Home() {
             {/* Top row: Logo + Icons */}
             <div className="flex items-center justify-between mb-3">
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-9 h-9 object-contain" />
+                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-16 h-16 object-contain" />
                 {/* <span className="text-xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                   CLICS
                 </span> */}
@@ -152,7 +153,7 @@ export default async function Home() {
       {/* ═══════════════════════════════════════════
           CONTEÚDO — Galeria de Álbuns
       ═══════════════════════════════════════════ */}
-      <main className="container mx-auto px-4 py-10 max-w-6xl space-y-12">
+      <main className="container mx-auto px-4 py-10 max-w-6xl space-y-12 pb-28 md:pb-10">
 
         {/* Hero Section */}
         <section className="text-center max-w-3xl mx-auto space-y-5 pt-4">
@@ -277,6 +278,9 @@ export default async function Home() {
           </Link>
         </div>
       </footer>
+
+      {/* ── Mobile Bottom Navbar ── */}
+      <MobileNavbar />
     </div>
   );
 }
