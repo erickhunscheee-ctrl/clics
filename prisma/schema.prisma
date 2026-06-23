@@ -1,0 +1,158 @@
+// Prisma Schema — Plataforma de Venda de Fotos
+// Deploy: Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  PHOTOGRAPHER
+}
+
+enum AlbumStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PhotoStatus {
+  ACTIVE
+  HIDDEN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id             String   @id @default(cuid())
+  supabaseUserId String   @unique
+  name           String
+  email          String   @unique
+  avatarUrl      String?
+  role           UserRole @default(PHOTOGRAPHER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  albums Album[]
+
+  @@map("users")
+}
+
+model Album {
+  id                String      @id @default(cuid())
+  photographerId    String
+  title             String
+  slug              String      @unique
+  description       String?
+  eventDate         DateTime?
+  location          String?
+  coverImageUrl     String?
+  defaultPhotoPrice Int         @default(0) // Price in centavos (BRL)
+  status            AlbumStatus @default(DRAFT)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  photographer User    @relation(fields: [photographerId], references: [id], onDelete: Cascade)
+  photos       Photo[]
+  orders       Order[]
+
+  @@index([photographerId])
+  @@index([slug])
+  @@map("albums")
+}
+
+model Photo {
+  id               String      @id @default(cuid())
+  albumId          String
+  originalFileName String
+  originalMimeType String
+  driveFileId      String
+  previewR2Key     String
+  previewUrl       String
+  price            Int         @default(0) // Price in centavos (BRL)
+  width            Int?
+  height           Int?
+  fileSize         Int?        // In bytes
+  status           PhotoStatus @default(ACTIVE)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  album      Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([albumId])
+  @@map("photos")
+}
+
+model Order {
+  id                       String      @id @default(cuid())
+  orderNumber              String      @unique @default(cuid())
+  albumId                  String
+  customerName             String
+  customerEmail            String
+  customerPhone            String
+  customerDocument         String?
+  status                   OrderStatus @default(PENDING)
+  totalAmount              Int         @default(0) // In centavos
+  mercadoPagoPreferenceId  String?
+  mercadoPagoPaymentId     String?
+  accessToken              String      @unique
+  accessTokenExpiresAt     DateTime
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  album       Album        @relation(fields: [albumId], references: [id])
+  items       OrderItem[]
+  paymentLogs PaymentLog[]
+
+  @@index([accessToken])
+  @@index([albumId])
+  @@index([mercadoPagoPaymentId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id               String    @id @default(cuid())
+  orderId          String
+  photoId          String
+  price            Int       // Snapshot do preço no momento da compra (centavos)
+  downloadCount    Int       @default(0)
+  lastDownloadedAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photo Photo @relation(fields: [photoId], references: [id])
+
+  @@unique([orderId, photoId])
+  @@map("order_items")
+}
+
+model PaymentLog {
+  id         String   @id @default(cuid())
+  orderId    String?
+  provider   String   @default("mercadopago")
+  eventType  String
+  externalId String?
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([externalId])
+  @@map("payment_logs")
+}

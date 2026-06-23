@@ -1,0 +1,136 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { checkoutSchema } from "@/lib/validators/checkout";
+import { createPaymentPreference } from "@/lib/mercadopago";
+import { generateAccessToken } from "@/lib/tokens";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // Validação com Zod
+    const parsedData = checkoutSchema.safeParse(body);
+    if (!parsedData.success) {
+      return NextResponse.json(
+        { message: "Dados inválidos.", errors: parsedData.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { albumId, photoIds, customerName, customerEmail, customerPhone, customerDocument } = parsedData.data;
+
+    if (photoIds.length === 0) {
+      return NextResponse.json(
+        { message: "Selecione pelo menos uma foto para realizar a compra." },
+        { status: 400 }
+      );
+    }
+
+    // Busca o álbum
+    const album = await prisma.album.findUnique({
+      where: { id: albumId, status: "PUBLISHED" },
+    });
+
+    if (!album) {
+      return NextResponse.json(
+        { message: "Álbum não encontrado ou não está publicado." },
+        { status: 404 }
+      );
+    }
+
+    // Busca as fotos no banco de dados para garantir preço e existência corretos
+    const photos = await prisma.photo.findMany({
+      where: {
+        id: { in: photoIds },
+        albumId: albumId,
+        status: "ACTIVE",
+      },
+    });
+
+    if (photos.length !== photoIds.length) {
+      return NextResponse.json(
+        { message: "Algumas das fotos selecionadas não estão disponíveis." },
+        { status: 400 }
+      );
+    }
+
+    // Calcula o valor total em centavos
+    const totalAmount = photos.reduce((sum, photo) => sum + photo.price, 0);
+
+    // Gera um token de acesso para o pedido com validade de 30 dias
+    const accessToken = generateAccessToken();
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
+
+    // Cria a transação no banco de dados
+    const order = await prisma.$transaction(async (tx) => {
+      // Cria a ordem
+      const newOrder = await tx.order.create({
+        data: {
+          albumId,
+          customerName,
+          customerEmail,
+          customerPhone,
+          customerDocument,
+          status: "PENDING",
+          totalAmount,
+          accessToken,
+          accessTokenExpiresAt: tokenExpiresAt,
+        },
+      });
+
+      // Cria os itens da ordem
+      await tx.orderItem.createMany({
+        data: photos.map((photo) => ({
+          orderId: newOrder.id,
+          photoId: photo.id,
+          price: photo.price,
+        })),
+      });
+
+      return newOrder;
+    });
+
+    // Mapeia itens para a preferência do Mercado Pago (em reais para a API do MP)
+    const mpItems = photos.map((photo) => ({
+      title: `${album.title} - Foto ${photo.originalFileName}`,
+      quantity: 1,
+      unitPrice: photo.price / 100, // MP espera valor em Reais (com decimais), não em centavos
+    }));
+
+    // Cria preferência no Mercado Pago
+    const mpPreference = await createPaymentPreference({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      accessToken: order.accessToken,
+      items: mpItems,
+      payer: {
+        name: customerName,
+        email: customerEmail,
+      },
+    });
+
+    // Atualiza o pedido com a ID da preferência do Mercado Pago
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        mercadoPagoPreferenceId: mpPreference.preferenceId,
+      },
+    });
+
+    // Retorna a URL de checkout (usa sandbox em dev se disponível, senão a URL oficial de checkout)
+    const checkoutUrl = mpPreference.sandboxInitPoint || mpPreference.initPoint;
+
+    return NextResponse.json({
+      orderId: order.id,
+      accessToken: order.accessToken,
+      checkoutUrl,
+    });
+  } catch (error: any) {
+    console.error("Erro no processamento do checkout:", error);
+    return NextResponse.json(
+      { message: "Erro interno do servidor ao iniciar o checkout." },
+      { status: 500 }
+    );
+  }
+}
