@@ -95,7 +95,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
 function PageLoader() {
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+      className="pointer-events-none fixed inset-0 z-[200] flex flex-col items-center justify-center"
       style={{ background: "rgba(246,248,252,0.85)", backdropFilter: "blur(8px)" }}
     >
       <div className="flex flex-col items-center gap-5">
