@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Camera, Loader2, Lock, Mail } from "lucide-react";
+import { ArrowRight, Camera, Loader2, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -63,14 +63,6 @@ export default function LoginPage() {
       <div className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-[#159BEF]/15 blur-3xl" />
       <div className="absolute -right-24 bottom-16 h-80 w-80 rounded-full bg-[#7B3FF2]/15 blur-3xl" />
 
-      <Link
-        href="/"
-        className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-[#061337] shadow-[0_2px_16px_rgba(6,19,55,0.07)] transition hover:-translate-y-0.5"
-      >
-        <ArrowLeft size={15} />
-        Voltar
-      </Link>
-
       <section className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_80px_rgba(6,19,55,0.10)] ring-1 ring-white md:grid-cols-2">
         <div className="relative hidden min-h-[620px] flex-col justify-between overflow-hidden bg-[#061337] p-10 text-white md:flex">
           <div className="absolute -left-24 top-20 h-64 w-64 rounded-full bg-[#159BEF]/30 blur-3xl" />
@@ -111,6 +103,14 @@ export default function LoginPage() {
         </div>
 
         <div className="p-6 sm:p-8 md:p-10">
+          <Link
+            href="/"
+            aria-label="Voltar"
+            className="mb-5 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-lg font-black leading-none text-[#061337] shadow-[0_2px_12px_rgba(6,19,55,0.06)] transition hover:-translate-y-0.5 hover:border-[#159BEF]/40 hover:text-[#159BEF]"
+          >
+            &lt;
+          </Link>
+
           <div className="mb-8 text-center md:hidden">
             <Image
               src="/icone_clics.png"
