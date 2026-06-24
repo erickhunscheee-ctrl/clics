@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
@@ -428,7 +429,9 @@ export default async function Home({ searchParams }: HomeProps) {
       </footer>
 
       {/* ── Mobile Bottom Navbar ── */}
-      <MobileNavbar />
+      <Suspense fallback={null}>
+        <MobileNavbar />
+      </Suspense>
     </div>
   );
 }
