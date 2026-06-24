@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           albumId,
           customerName,
           customerEmail,
-          customerPhone,
+          customerPhone: customerPhone || "",
           customerDocument,
           status: "PENDING",
           totalAmount,
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       payer: {
         name: customerName,
         email: customerEmail,
-        phone: customerPhone,
+        phone: customerPhone || "",
         document: customerDocument,
       },
       cardToken,
