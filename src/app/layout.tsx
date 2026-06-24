@@ -6,6 +6,7 @@ import { FavoritesProvider } from "@/components/favorites/favorites-provider";
 import { FavoritesBottomSheet } from "@/components/favorites/favorites-bottom-sheet";
 import { ProfileBottomSheet } from "@/components/profile/profile-bottom-sheet";
 import { AlbumsBottomSheet } from "@/components/albums/albums-bottom-sheet";
+import { LoadingProvider } from "@/components/ui/loading-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -36,20 +37,22 @@ export default function RootLayout({
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F6F8FC] text-[#061337]">
-        <FavoritesProvider>
-          <CartProvider>
-            {children}
-            <Suspense fallback={null}>
-              <FavoritesBottomSheet />
-            </Suspense>
-            <Suspense fallback={null}>
-              <ProfileBottomSheet />
-            </Suspense>
-            <Suspense fallback={null}>
-              <AlbumsBottomSheet />
-            </Suspense>
-          </CartProvider>
-        </FavoritesProvider>
+        <LoadingProvider>
+          <FavoritesProvider>
+            <CartProvider>
+              {children}
+              <Suspense fallback={null}>
+                <FavoritesBottomSheet />
+              </Suspense>
+              <Suspense fallback={null}>
+                <ProfileBottomSheet />
+              </Suspense>
+              <Suspense fallback={null}>
+                <AlbumsBottomSheet />
+              </Suspense>
+            </CartProvider>
+          </FavoritesProvider>
+        </LoadingProvider>
       </body>
     </html>
   );
