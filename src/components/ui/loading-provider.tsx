@@ -1,10 +1,18 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  ReactNode,
+} from "react";
 import Image from "next/image";
 
 interface LoadingContextType {
-  startLoading: () => void;
+  startLoading: (durationMs?: number) => void;
   stopLoading: () => void;
   withLoading: <T>(fn: () => Promise<T>) => Promise<T>;
 }
@@ -19,18 +27,62 @@ export function useLoading() {
 
 export function LoadingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const startLoading = useCallback(() => setIsLoading(true), []);
-  const stopLoading = useCallback(() => setIsLoading(false), []);
+  const clearLoadingTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const stopLoading = useCallback(() => {
+    clearLoadingTimeout();
+    setIsLoading(false);
+  }, [clearLoadingTimeout]);
+
+  const startLoading = useCallback(
+    (durationMs = 700) => {
+      clearLoadingTimeout();
+      setIsLoading(true);
+      if (durationMs > 0) {
+        timeoutRef.current = setTimeout(() => {
+          setIsLoading(false);
+          timeoutRef.current = null;
+        }, durationMs);
+      }
+    },
+    [clearLoadingTimeout]
+  );
 
   const withLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
+    clearLoadingTimeout();
     setIsLoading(true);
     try {
       return await fn();
     } finally {
-      setIsLoading(false);
+      stopLoading();
     }
-  }, []);
+  }, [clearLoadingTimeout, stopLoading]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const actionable = target.closest(
+        "button, a, [role='button'], input[type='submit']"
+      );
+      if (!actionable) return;
+      if (actionable.matches("[disabled], [aria-disabled='true']")) return;
+      if (actionable.closest("[data-loading-ignore='true']")) return;
+
+      startLoading(650);
+    };
+
+    document.addEventListener("click", handleClick, { capture: true });
+    return () => document.removeEventListener("click", handleClick, { capture: true });
+  }, [startLoading]);
 
   return (
     <LoadingContext.Provider value={{ startLoading, stopLoading, withLoading }}>
@@ -55,11 +107,11 @@ function PageLoader() {
           />
           <div className="relative w-16 h-16 flex items-center justify-center">
             <Image
-              src="/logo_clics.png"
+              src="/icone_clics.png"
               alt="CLICS"
-              width={64}
-              height={64}
-              className="w-16 h-16 object-contain drop-shadow-[0_4px_24px_rgba(21,155,239,0.3)]"
+              width={80}
+              height={80}
+              className="h-20 w-20 object-contain drop-shadow-[0_4px_24px_rgba(21,155,239,0.3)]"
               priority
             />
           </div>

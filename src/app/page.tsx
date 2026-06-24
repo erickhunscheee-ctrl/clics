@@ -8,6 +8,7 @@ import { Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight,
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 import { CartHeaderButton } from "@/components/cart/cart-header-button";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <div className="hidden md:flex items-center justify-between bg-white shadow-sm px-8 py-3.5 w-full" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <Image src="/logo_clics.png" alt="CLICS" width={40} height={40} className="w-10 h-10 object-contain" />
+            <Image src="/icone_clics.png" alt="CLICS" width={64} height={64} className="h-16 w-16 object-contain" priority />
             {/* <span className="text-2xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
               CLICS
             </span> */}
@@ -130,7 +131,7 @@ export default async function Home({ searchParams }: HomeProps) {
             {/* Top row: Logo + Icons */}
             <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-12 h-12 object-contain" />
+                <Image src="/icone_clics.png" alt="CLICS" width={64} height={64} className="h-16 w-16 object-contain" priority />
                 {/* <span className="text-xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                   CLICS
                 </span> */}
@@ -406,22 +407,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t py-10 pb-28 md:pb-10 mt-8" style={{ background: "white", borderColor: "#e5e7eb" }}>
-        <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: "#9ca3af" }}>
-          <div className="flex items-center gap-2">
-            <Image src="/logo_clics.png" alt="CLICS" width={24} height={24} className="w-6 h-6 object-contain" />
-            <span>&copy; {new Date().getFullYear()} CLICS. Todos os direitos reservados.</span>
-          </div>
-          <Link
-            href="/dashboard"
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:text-[#159BEF] hover:border-[#159BEF]/30"
-            style={{ color: "#9ca3af", borderColor: "#e5e7eb" }}
-          >
-            Área do Fotógrafo →
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* ── Mobile Bottom Navbar ── */}
       <Suspense fallback={null}>
