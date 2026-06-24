@@ -44,7 +44,7 @@ export function FavoritesBottomSheet() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] overflow-hidden flex items-end justify-center">
+    <div className="fixed inset-0 z-[120] overflow-hidden flex items-end justify-center px-[10px]">
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300 ${

@@ -24,8 +24,8 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         onClick={onClose}
       />
 
-      <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="pointer-events-auto w-screen max-w-md">
+      <div className="pointer-events-none fixed inset-y-0 left-[10px] right-[10px] flex max-w-full justify-end sm:left-auto sm:pl-10">
+        <div className="pointer-events-auto w-full max-w-md">
           <div className="flex h-full flex-col overflow-hidden bg-[#F6F8FC] border-l border-slate-200/60 shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200/80 bg-white px-6 py-6">
