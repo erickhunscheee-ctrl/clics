@@ -17,14 +17,14 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 top-[84px] z-[90] overflow-hidden md:top-[92px]">
+    <div className="fixed inset-0 z-[180] overflow-hidden">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="pointer-events-none fixed bottom-0 right-0 top-[84px] flex w-full justify-end md:top-[92px]">
+      <div className="pointer-events-none fixed inset-y-0 right-0 flex w-full justify-end">
         <div className="pointer-events-auto w-[min(calc(100vw-10px),28rem)] max-w-md">
           <div className="flex h-full flex-col overflow-hidden bg-[#F6F8FC] border-l border-slate-200/60 shadow-2xl">
             {/* Header */}

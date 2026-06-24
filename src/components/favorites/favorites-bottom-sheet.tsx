@@ -5,14 +5,13 @@ import { useCart } from "@/components/cart/cart-provider";
 import { formatCurrency } from "@/lib/money";
 import { Heart, ShoppingCart, Trash2, X, Image as ImageIcon, FolderHeart, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export function FavoritesBottomSheet() {
   const { favoriteAlbums, favoritePhotos, toggleAlbumFavorite, togglePhotoFavorite } = useFavorites();
   const { addToCart, isInCart } = useCart();
   const searchParams = useSearchParams();
-  const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<"albums" | "photos">("albums");
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +37,7 @@ export function FavoritesBottomSheet() {
     const params = new URLSearchParams(window.location.search);
     params.delete("favorites");
     const query = params.toString();
-    router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
+    window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
   if (!isOpen) return null;
@@ -55,6 +54,7 @@ export function FavoritesBottomSheet() {
 
       {/* Sheet Container */}
       <div
+        data-loading-ignore="true"
         className={`relative w-full max-w-xl bg-white rounded-t-[2.5rem] shadow-[0_-8px_30px_rgba(6,19,55,0.15)] z-[130] flex flex-col h-[80vh] transition-transform duration-300 ease-out transform ${
           animateOpen ? "translate-y-0" : "translate-y-full"
         }`}

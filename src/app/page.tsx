@@ -10,6 +10,7 @@ import { CartHeaderButton } from "@/components/cart/cart-header-button";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { HomeHeroSection } from "@/components/home/home-hero-section";
+import { ProfileTrigger } from "@/components/profile/profile-trigger";
 
 export const dynamic = "force-dynamic";
 
@@ -96,14 +97,11 @@ export default async function Home({ searchParams }: HomeProps) {
                 >
                   {userHomeLabel}
                 </Link>
-                <Link href="/?profile=true" aria-label="Abrir perfil" className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center transition hover:opacity-80"
-                  style={{ background: "linear-gradient(135deg, #159BEF, #7B3FF2)" }}>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
-                  )}
-                </Link>
+                <ProfileTrigger
+                  avatarUrl={user.avatarUrl}
+                  name={user.name}
+                  className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center transition hover:opacity-80"
+                />
               </div>
             ) : (
               <>
@@ -144,13 +142,12 @@ export default async function Home({ searchParams }: HomeProps) {
                   <Bell size={22} style={{ color: "#061337" }} />
                 </button>
                 {user ? (
-                  <Link href="/?profile=true" aria-label="Abrir perfil" className="transition-opacity hover:opacity-70">
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                      <User size={22} style={{ color: "#061337" }} />
-                    )}
-                  </Link>
+                  <ProfileTrigger
+                    avatarUrl={user.avatarUrl}
+                    name={user.name}
+                    className="h-6 w-6 rounded-full overflow-hidden transition-opacity hover:opacity-70 flex items-center justify-center"
+                    iconSize={22}
+                  />
                 ) : (
                   <Link href="/login" aria-label="Entrar" className="transition-opacity hover:opacity-70">
                     <User size={22} style={{ color: "#061337" }} />

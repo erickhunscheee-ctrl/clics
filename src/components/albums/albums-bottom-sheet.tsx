@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -149,7 +149,6 @@ function AlbumCard({ album, onClose }: { album: Album; onClose: () => void }) {
 
 export function AlbumsBottomSheet() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
   const [animateOpen, setAnimateOpen] = useState(false);
@@ -213,7 +212,7 @@ export function AlbumsBottomSheet() {
     const params = new URLSearchParams(window.location.search);
     params.delete("albums");
     const query = params.toString();
-    router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
+    window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
   if (!isOpen) return null;
@@ -230,6 +229,7 @@ export function AlbumsBottomSheet() {
 
       {/* Sheet */}
       <div
+        data-loading-ignore="true"
         className={`relative w-full max-w-xl bg-[#F6F8FC] rounded-t-[2.5rem] shadow-[0_-8px_30px_rgba(6,19,55,0.15)] z-[130] flex flex-col h-[88vh] transition-transform duration-300 ease-out transform ${
           animateOpen ? "translate-y-0" : "translate-y-full"
         }`}

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Home, Images, Heart, User } from "lucide-react";
-import { useLoading } from "@/components/ui/loading-provider";
 
 function NavIcon({
   icon: Icon,
@@ -116,15 +115,12 @@ function SheetButton({
 export function MobileNavbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { startLoading } = useLoading();
 
   const albumsOpen = searchParams.get("albums") === "true";
   const favoritesOpen = searchParams.get("favorites") === "true";
   const profileOpen = searchParams.get("profile") === "true";
 
   const openSheet = (key: "albums" | "favorites" | "profile") => {
-    startLoading(650);
     const current = searchParams.get(key) === "true";
     const params = new URLSearchParams(window.location.search);
     // Close all sheets
@@ -134,7 +130,7 @@ export function MobileNavbar() {
     // Toggle clicked one
     if (!current) params.set(key, "true");
     const query = params.toString();
-    router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
+    window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
   const isHomeActive = pathname === "/";
@@ -143,6 +139,7 @@ export function MobileNavbar() {
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       aria-label="Navegação principal mobile"
+      data-loading-ignore="true"
     >
       <div
         className="bg-white px-1 py-1.5"

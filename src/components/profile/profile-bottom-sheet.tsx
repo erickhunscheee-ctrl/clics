@@ -120,7 +120,7 @@ export function ProfileBottomSheet() {
     const params = new URLSearchParams(window.location.search);
     params.delete("profile");
     const query = params.toString();
-    router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
+    window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
   const handleSignOut = async () => {
@@ -167,6 +167,7 @@ export function ProfileBottomSheet() {
 
       {/* Sheet */}
       <div
+        data-loading-ignore="true"
         className={`relative w-full max-w-xl bg-[#F6F8FC] rounded-t-[2.5rem] shadow-[0_-8px_30px_rgba(6,19,55,0.15)] z-[130] flex flex-col h-[85vh] transition-transform duration-300 ease-out transform ${
           animateOpen ? "translate-y-0" : "translate-y-full"
         }`}
