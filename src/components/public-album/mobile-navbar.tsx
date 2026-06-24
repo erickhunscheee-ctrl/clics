@@ -24,7 +24,7 @@ const navItems = [
   },
   {
     label: "Favoritos",
-    href: "/#favoritos",
+    href: "/favoritos",
     icon: Heart,
     circled: true,
   },

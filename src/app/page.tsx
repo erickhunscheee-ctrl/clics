@@ -7,6 +7,7 @@ import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, Arr
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 import { CartHeaderButton } from "@/components/cart/cart-header-button";
 import { SearchBar } from "@/components/home/search-bar";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 
 export const dynamic = "force-dynamic";
 
@@ -337,6 +338,22 @@ export default async function Home({ searchParams }: HomeProps) {
                       alt={album.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                     />
+                    
+                    {/* Favorite Album Button */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <FavoriteButton
+                        type="album"
+                        album={{
+                          id: album.id,
+                          slug: album.slug,
+                          title: album.title,
+                          coverImageUrl: album.coverImageUrl,
+                          defaultPhotoPrice: album.defaultPhotoPrice,
+                        }}
+                        className="bg-white/80 backdrop-blur-md hover:bg-white text-gray-800 shadow-sm"
+                      />
+                    </div>
+
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-lg"

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import { Suspense } from "react";
 import { CartProvider } from "@/components/cart/cart-provider";
+import { FavoritesProvider } from "@/components/favorites/favorites-provider";
+import { FavoritesBottomSheet } from "@/components/favorites/favorites-bottom-sheet";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,9 +34,14 @@ export default function RootLayout({
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#F6F8FC] text-[#061337]">
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <FavoritesProvider>
+          <CartProvider>
+            {children}
+            <Suspense fallback={null}>
+              <FavoritesBottomSheet />
+            </Suspense>
+          </CartProvider>
+        </FavoritesProvider>
       </body>
     </html>
   );

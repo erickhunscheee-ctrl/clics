@@ -6,6 +6,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { formatCurrency } from "@/lib/money";
 import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 
 interface Photo {
   id: string;
@@ -169,6 +170,22 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                       alt={photo.originalFileName}
                       className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 select-none"
                     />
+
+                    {/* Favorite Photo Button */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <FavoriteButton
+                        type="photo"
+                        photo={{
+                          id: photo.id,
+                          originalFileName: photo.originalFileName,
+                          previewUrl: photo.previewUrl,
+                          price: photo.price,
+                          albumId: album.id,
+                          albumSlug: album.slug,
+                        }}
+                        className="bg-white/80 backdrop-blur-md hover:bg-white text-gray-800 shadow-sm"
+                      />
+                    </div>
                     
                     {/* Hover controls overlay */}
                     <div className="absolute inset-0 bg-[#061337]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -302,9 +319,23 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
           {/* Detail Side Panel */}
           <div className="w-full md:w-80 bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-900 p-6 flex flex-col justify-between text-white">
             <div className="space-y-6">
-              <div>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Nome do Arquivo</p>
-                <h4 className="text-sm font-semibold truncate">{activePhoto.originalFileName}</h4>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Nome do Arquivo</p>
+                  <h4 className="text-sm font-semibold truncate">{activePhoto.originalFileName}</h4>
+                </div>
+                <FavoriteButton
+                  type="photo"
+                  photo={{
+                    id: activePhoto.id,
+                    originalFileName: activePhoto.originalFileName,
+                    previewUrl: activePhoto.previewUrl,
+                    price: activePhoto.price,
+                    albumId: album.id,
+                    albumSlug: album.slug,
+                  }}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm p-1.5"
+                />
               </div>
 
               <div>
