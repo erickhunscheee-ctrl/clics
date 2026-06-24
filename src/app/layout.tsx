@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/cart/cart-provider";
 import { FavoritesProvider } from "@/components/favorites/favorites-provider";
 import { FavoritesBottomSheet } from "@/components/favorites/favorites-bottom-sheet";
 import { ProfileBottomSheet } from "@/components/profile/profile-bottom-sheet";
+import { AlbumsBottomSheet } from "@/components/albums/albums-bottom-sheet";
 import "./globals.css";
 
 const inter = Inter({
@@ -43,6 +44,9 @@ export default function RootLayout({
             </Suspense>
             <Suspense fallback={null}>
               <ProfileBottomSheet />
+            </Suspense>
+            <Suspense fallback={null}>
+              <AlbumsBottomSheet />
             </Suspense>
           </CartProvider>
         </FavoritesProvider>
