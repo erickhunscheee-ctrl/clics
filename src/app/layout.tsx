@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { FavoritesProvider } from "@/components/favorites/favorites-provider";
 import { FavoritesBottomSheet } from "@/components/favorites/favorites-bottom-sheet";
+import { ProfileBottomSheet } from "@/components/profile/profile-bottom-sheet";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,6 +40,9 @@ export default function RootLayout({
             {children}
             <Suspense fallback={null}>
               <FavoritesBottomSheet />
+            </Suspense>
+            <Suspense fallback={null}>
+              <ProfileBottomSheet />
             </Suspense>
           </CartProvider>
         </FavoritesProvider>

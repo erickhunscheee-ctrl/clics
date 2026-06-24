@@ -22,12 +22,6 @@ const regularNavItems = [
     icon: CalendarDays,
     circled: true,
   },
-  {
-    label: "Perfil",
-    href: "/usuario",
-    icon: User,
-    circled: true,
-  },
 ];
 
 function NavIcon({
@@ -106,6 +100,7 @@ export function MobileNavbar() {
   const router = useRouter();
 
   const favoritesOpen = searchParams.get("favorites") === "true";
+  const profileOpen = searchParams.get("profile") === "true";
 
   const handleFavoritesOpen = () => {
     const params = new URLSearchParams(window.location.search);
@@ -113,6 +108,19 @@ export function MobileNavbar() {
       params.delete("favorites");
     } else {
       params.set("favorites", "true");
+      params.delete("profile"); // close profile if open
+    }
+    const query = params.toString();
+    router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
+  };
+
+  const handleProfileOpen = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (profileOpen) {
+      params.delete("profile");
+    } else {
+      params.set("profile", "true");
+      params.delete("favorites"); // close favorites if open
     }
     const query = params.toString();
     router.push(`${window.location.pathname}${query ? `?${query}` : ""}`);
@@ -175,6 +183,33 @@ export function MobileNavbar() {
               />
             </div>
             <NavLabel label="Favoritos" isActive={favoritesOpen} />
+          </button>
+
+          {/* Profile — opens Bottom Sheet via query param */}
+          <button
+            onClick={handleProfileOpen}
+            className="flex flex-col items-center gap-1.5 min-w-[56px] py-0.5 transition-opacity active:opacity-70"
+            aria-label="Abrir perfil"
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center border-[1.5px] transition-all"
+              style={
+                profileOpen
+                  ? {
+                      borderColor: "transparent",
+                      background:
+                        "linear-gradient(white, white) padding-box, linear-gradient(90deg, #159BEF, #7B3FF2) border-box",
+                    }
+                  : { borderColor: "#061337" }
+              }
+            >
+              <User
+                size={18}
+                strokeWidth={1.8}
+                style={{ color: profileOpen ? "#7B3FF2" : "#061337" }}
+              />
+            </div>
+            <NavLabel label="Perfil" isActive={profileOpen} />
           </button>
         </div>
       </div>
