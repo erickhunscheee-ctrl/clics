@@ -16,7 +16,7 @@ function NavIcon({
   if (circled) {
     return (
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center border-[1.5px] transition-all"
+        className="w-8 h-8 rounded-full flex items-center justify-center border-[1.5px] transition-all"
         style={
           isActive
             ? {
@@ -28,7 +28,7 @@ function NavIcon({
         }
       >
         <Icon
-          size={18}
+          size={16}
           strokeWidth={1.8}
           style={{ color: isActive ? "#159BEF" : "#061337" }}
         />
@@ -37,9 +37,9 @@ function NavIcon({
   }
 
   return (
-    <div className="w-10 h-10 flex items-center justify-center">
+    <div className="w-8 h-8 flex items-center justify-center">
       <Icon
-        size={22}
+        size={19}
         strokeWidth={1.8}
         style={isActive ? { stroke: "url(#navGradient)" } : { color: "#061337" }}
       />
@@ -79,24 +79,22 @@ function SheetButton({
   onToggle,
   label,
   ariaLabel,
-  activeColor,
   children,
 }: {
   isOpen: boolean;
   onToggle: () => void;
   label: string;
   ariaLabel: string;
-  activeColor: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       onClick={onToggle}
-      className="flex flex-col items-center gap-1.5 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
+      className="flex flex-col items-center gap-1 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
       aria-label={ariaLabel}
     >
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center border-[1.5px] transition-all"
+        className="w-8 h-8 rounded-full flex items-center justify-center border-[1.5px] transition-all"
         style={
           isOpen
             ? {
@@ -140,18 +138,18 @@ export function MobileNavbar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-4 left-4 right-4 z-50"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       aria-label="Navegação principal mobile"
     >
       <div
-        className="bg-white rounded-2xl px-1 py-3"
+        className="bg-white px-1 py-1.5"
         style={{ boxShadow: "0 4px 32px 0 rgba(6,19,55,0.12)" }}
       >
         <div className="flex items-center justify-around">
           {/* Início — direct link */}
           <Link
             href="/"
-            className="flex flex-col items-center gap-1.5 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
+            className="flex flex-col items-center gap-1 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
             aria-current={isHomeActive ? "page" : undefined}
           >
             <NavIcon icon={Home} isActive={isHomeActive} />
@@ -164,10 +162,9 @@ export function MobileNavbar() {
             onToggle={() => openSheet("albums")}
             label="Álbuns"
             ariaLabel="Abrir álbuns"
-            activeColor="#7B3FF2"
           >
             <Images
-              size={18}
+              size={16}
               strokeWidth={1.8}
               style={{ color: albumsOpen ? "#7B3FF2" : "#061337" }}
             />
@@ -179,10 +176,9 @@ export function MobileNavbar() {
             onToggle={() => openSheet("favorites")}
             label="Favoritos"
             ariaLabel="Abrir favoritos"
-            activeColor="#EF4444"
           >
             <Heart
-              size={18}
+              size={16}
               strokeWidth={1.8}
               style={{
                 color: favoritesOpen ? "#EF4444" : "#061337",
@@ -197,10 +193,9 @@ export function MobileNavbar() {
             onToggle={() => openSheet("profile")}
             label="Perfil"
             ariaLabel="Abrir perfil"
-            activeColor="#7B3FF2"
           >
             <User
-              size={18}
+              size={16}
               strokeWidth={1.8}
               style={{ color: profileOpen ? "#7B3FF2" : "#061337" }}
             />

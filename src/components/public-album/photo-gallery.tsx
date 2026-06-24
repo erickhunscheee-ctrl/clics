@@ -144,7 +144,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10 pb-36">
+      <main className="max-w-7xl mx-auto px-6 py-10 pb-32">
         {photos.length === 0 ? (
           <div className="text-center py-20 bg-white border border-slate-200/60 rounded-3xl space-y-4 shadow-sm">
             <h3 className="text-lg font-bold text-[#061337]" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}>Nenhuma foto publicada</h3>
@@ -242,32 +242,33 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
       {/* Floating Cart Button & Checkout Shortcut */}
       {items.length > 0 && (
         <div 
-          className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/90 border border-slate-200/80 backdrop-blur-md px-6 py-4 rounded-[2rem] shadow-[0_12px_40px_rgba(6,19,55,0.15)] flex flex-col sm:flex-row items-center gap-4 max-w-lg w-[calc(100%-2rem)] transition-all animate-in fade-in slide-in-from-bottom-5"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-md px-3 py-2.5 shadow-[0_-8px_30px_rgba(6,19,55,0.12)] flex items-center gap-3 transition-all animate-in fade-in slide-in-from-bottom-5 md:px-8 md:py-3"
         >
-          <div className="flex-1 text-center sm:text-left">
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
               {items.length} {items.length === 1 ? "foto selecionada" : "fotos selecionadas"}
             </p>
-            <p className="text-base font-black text-[#061337]">
-              Subtotal: <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">{formatCurrency(totalAmount)}</span>
+            <p className="truncate text-sm font-black text-[#061337] md:text-base">
+              <span className="hidden sm:inline">Subtotal: </span>
+              <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">{formatCurrency(totalAmount)}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#061337] font-bold py-3 px-4 rounded-2xl text-xs transition-all"
+              className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#061337] font-bold py-2.5 px-3 rounded-2xl text-xs transition-all md:px-4"
             >
               Ver Carrinho
             </button>
             <Link
               href={checkoutHref}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 text-white font-bold py-3 px-5 rounded-2xl text-xs shadow-md transition-all hover:opacity-95"
+              className="flex items-center justify-center gap-2 text-white font-bold py-2.5 px-3 rounded-2xl text-xs shadow-md transition-all hover:opacity-95 md:px-5"
               style={{
                 background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)",
                 boxShadow: "0 10px 20px -5px rgba(123, 63, 242, 0.3)",
               }}
             >
-              Finalizar Compra <ArrowRight size={14} />
+              <span className="hidden sm:inline">Finalizar </span>Compra <ArrowRight size={14} />
             </Link>
           </div>
         </div>

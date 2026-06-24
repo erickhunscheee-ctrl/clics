@@ -4,10 +4,9 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
-import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, ShoppingCart } from "lucide-react";
+import { Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, ShoppingCart } from "lucide-react";
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
 import { CartHeaderButton } from "@/components/cart/cart-header-button";
-import { SearchBar } from "@/components/home/search-bar";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 
 export const dynamic = "force-dynamic";
@@ -53,10 +52,10 @@ export default async function Home({ searchParams }: HomeProps) {
       {/* ═══════════════════════════════════════════
           HEADER — Desktop & Mobile
       ═══════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 px-4 pt-4 pb-2 md:py-5 md:px-8" style={{ background: "#F6F8FC" }}>
+      <header className="fixed top-0 left-0 right-0 z-50" style={{ background: "#F6F8FC" }}>
 
         {/* ── Desktop Header ── */}
-        <div className="hidden md:flex items-center justify-between bg-white rounded-2xl shadow-sm px-6 py-3.5 max-w-6xl mx-auto" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
+        <div className="hidden md:flex items-center justify-between bg-white shadow-sm px-8 py-3.5 w-full" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <Image src="/logo_clics.png" alt="CLICS" width={40} height={40} className="w-10 h-10 object-contain" />
@@ -81,8 +80,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <SearchBar className="hidden lg:flex w-60 py-1.5" />
-
             <CartHeaderButton />
 
             {/* Divider */}
@@ -129,11 +126,11 @@ export default async function Home({ searchParams }: HomeProps) {
 
         {/* ── Mobile Header ── */}
         <div className="md:hidden">
-          <div className="bg-white rounded-2xl px-4 pt-4 pb-3" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
+          <div className="bg-white px-4 py-2.5" style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}>
             {/* Top row: Logo + Icons */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-16 h-16 object-contain" />
+                <Image src="/logo_clics.png" alt="CLICS" width={36} height={36} className="w-12 h-12 object-contain" />
                 {/* <span className="text-xl font-semibold tracking-tight" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                   CLICS
                 </span> */}
@@ -160,8 +157,6 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
             </div>
 
-            {/* Search bar */}
-            <SearchBar />
           </div>
         </div>
       </header>
@@ -169,7 +164,7 @@ export default async function Home({ searchParams }: HomeProps) {
       {/* ═══════════════════════════════════════════
           CONTEÚDO — Galeria de Álbuns
       ═══════════════════════════════════════════ */}
-      <main className="container mx-auto px-4 py-10 max-w-6xl space-y-12 pb-28 md:pb-10">
+      <main className="container mx-auto px-4 pt-28 md:pt-32 max-w-6xl space-y-12 pb-24 md:pb-10">
         <section className="relative overflow-hidden rounded-[2rem] border border-white bg-white px-6 py-10 text-center shadow-[0_24px_80px_rgba(6,19,55,0.08)] md:px-12 md:py-14">
           <div className="absolute left-1/2 top-0 h-1 w-14 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#159BEF] to-[#7B3FF2]" />
           <div className="absolute -left-24 top-16 h-56 w-56 rounded-full bg-[#159BEF]/10 blur-3xl" />
