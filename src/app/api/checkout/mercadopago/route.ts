@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkoutSchema } from "@/lib/validators/checkout";
-import { createPaymentPreference } from "@/lib/mercadopago";
+import { processTransparentPayment, mapPaymentStatus } from "@/lib/mercadopago";
 import { generateAccessToken } from "@/lib/tokens";
 
 export async function POST(request: Request) {
@@ -17,7 +17,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const { albumId, photoIds, customerName, customerEmail, customerPhone, customerDocument, paymentMethod } = parsedData.data;
+    const { 
+      albumId, 
+      photoIds, 
+      customerName, 
+      customerEmail, 
+      customerPhone, 
+      customerDocument, 
+      paymentMethod,
+      cardToken,
+      installments,
+      paymentMethodId
+    } = parsedData.data;
 
     if (photoIds.length === 0) {
       return NextResponse.json(
@@ -91,47 +102,49 @@ export async function POST(request: Request) {
       return newOrder;
     });
 
-    // Mapeia itens para a preferência do Mercado Pago (em reais para a API do MP)
-    const mpItems = photos.map((photo) => ({
-      title: `${album.title} - Foto ${photo.originalFileName}`,
-      quantity: 1,
-      unitPrice: photo.price / 100, // MP espera valor em Reais (com decimais), não em centavos
-    }));
-
-    // Cria preferência no Mercado Pago
-    const mpPreference = await createPaymentPreference({
+    // Processa pagamento transparente
+    const paymentResult = await processTransparentPayment({
       orderId: order.id,
       orderNumber: order.orderNumber,
-      accessToken: order.accessToken,
       paymentMethod,
-      items: mpItems,
+      transactionAmount: totalAmount / 100, // MP espera valor em Reais (com decimais)
       payer: {
         name: customerName,
         email: customerEmail,
+        phone: customerPhone,
+        document: customerDocument,
       },
+      cardToken,
+      installments,
+      paymentMethodId,
     });
 
-    // Atualiza o pedido com a ID da preferência do Mercado Pago
-    await prisma.order.update({
+    const mappedStatus = mapPaymentStatus(paymentResult.status || "pending");
+
+    // Atualiza o pedido com os detalhes de pagamento retornados do Mercado Pago
+    const updatedOrder = await prisma.order.update({
       where: { id: order.id },
       data: {
-        mercadoPagoPreferenceId: mpPreference.preferenceId,
+        status: mappedStatus,
+        mercadoPagoPaymentId: paymentResult.id || null,
       },
     });
-
-    // Retorna a URL de checkout (usa sandbox em dev se disponível, senão a URL oficial de checkout)
-    const checkoutUrl = mpPreference.sandboxInitPoint || mpPreference.initPoint;
 
     return NextResponse.json({
       orderId: order.id,
       accessToken: order.accessToken,
-      checkoutUrl,
+      status: updatedOrder.status,
+      paymentStatus: paymentResult.status,
+      paymentStatusDetail: paymentResult.statusDetail,
+      pixCopiaECola: paymentResult.pixCopiaECola,
+      pixQrCodeBase64: paymentResult.pixQrCodeBase64,
     });
   } catch (error) {
     console.error("Erro no processamento do checkout:", error);
     return NextResponse.json(
-      { message: "Erro interno do servidor ao iniciar o checkout." },
+      { message: "Erro interno do servidor ao processar o pagamento." },
       { status: 500 }
     );
   }
 }
+

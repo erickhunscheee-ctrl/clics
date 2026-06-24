@@ -8,6 +8,12 @@ export const checkoutSchema = z.object({
   customerPhone: z.string().min(10, "Telefone inválido (use o formato com DDD)"),
   customerDocument: z.string().optional().nullable(),
   paymentMethod: z.enum(["PIX", "CREDIT_CARD"]).default("PIX"),
+  
+  // Campos para checkout transparente (Cartão de Crédito)
+  cardToken: z.string().optional().nullable(),
+  installments: z.number().int().positive().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
 });
 
 export type CheckoutSchemaInput = z.infer<typeof checkoutSchema>;
+

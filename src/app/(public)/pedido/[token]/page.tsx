@@ -2,7 +2,20 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/money";
 import { getPaymentDetails, mapPaymentStatus } from "@/lib/mercadopago";
-import { CheckCircle2, Clock, XCircle, Download, CreditCard, ShoppingBag, Phone, Mail, User } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Download,
+  CreditCard,
+  ShoppingBag,
+  Phone,
+  Mail,
+  User,
+  ArrowLeft,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface OrderPageProps {
   params: Promise<{ token: string }>;
@@ -13,34 +26,21 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   const { token } = await params;
   const { payment_id: paymentId, collection_id: collectionId } = await searchParams;
 
-  // Busca o pedido pelo token com suas fotos e itens
   let order = await prisma.order.findUnique({
     where: { accessToken: token },
     include: {
-      album: {
-        select: {
-          title: true,
-          coverImageUrl: true,
-        },
-      },
+      album: { select: { title: true, coverImageUrl: true } },
       items: {
         include: {
           photo: {
-            select: {
-              id: true,
-              originalFileName: true,
-              previewUrl: true,
-              price: true,
-            },
+            select: { id: true, originalFileName: true, previewUrl: true, price: true },
           },
         },
       },
     },
   });
 
-  if (!order) {
-    notFound();
-  }
+  if (!order) notFound();
 
   const returnedPaymentId = paymentId || collectionId;
   if (returnedPaymentId && order.status === "PENDING") {
@@ -50,26 +50,13 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
         const nextStatus = mapPaymentStatus(paymentDetails.status || "");
         order = await prisma.order.update({
           where: { id: order.id },
-          data: {
-            status: nextStatus,
-            mercadoPagoPaymentId: returnedPaymentId,
-          },
+          data: { status: nextStatus, mercadoPagoPaymentId: returnedPaymentId },
           include: {
-            album: {
-              select: {
-                title: true,
-                coverImageUrl: true,
-              },
-            },
+            album: { select: { title: true, coverImageUrl: true } },
             items: {
               include: {
                 photo: {
-                  select: {
-                    id: true,
-                    originalFileName: true,
-                    previewUrl: true,
-                    price: true,
-                  },
+                  select: { id: true, originalFileName: true, previewUrl: true, price: true },
                 },
               },
             },
@@ -77,99 +64,196 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
         });
       }
     } catch (error) {
-      console.error("Erro ao sincronizar retorno do Mercado Pago:", error);
+      console.error("Erro ao sincronizar pagamento:", error);
     }
   }
 
-  // Verifica se o token expirou
   const isExpired = new Date() > order.accessTokenExpiresAt;
 
-  // Se o pedido está pendente, podemos dar o link de pagamento do Mercado Pago
-  const payUrl = order.mercadoPagoPreferenceId
-    ? `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${order.mercadoPagoPreferenceId}`
-    : null;
+  // Config por status
+  const statusConfig = {
+    PAID: {
+      icon: CheckCircle2,
+      label: "Pagamento Aprovado!",
+      description: "Seus downloads já estão liberados abaixo. Aproveite!",
+      iconBg: "rgba(21,155,239,0.1)",
+      iconColor: "#159BEF",
+      badgeBg: "rgba(21,155,239,0.08)",
+      badgeColor: "#159BEF",
+      badgeBorder: "rgba(21,155,239,0.2)",
+      badgeLabel: "Pago",
+    },
+    PENDING: {
+      icon: Clock,
+      label: "Aguardando Pagamento",
+      description: "Assim que o Mercado Pago confirmar a transação, seus downloads serão liberados.",
+      iconBg: "rgba(234,179,8,0.1)",
+      iconColor: "#d97706",
+      badgeBg: "rgba(234,179,8,0.08)",
+      badgeColor: "#d97706",
+      badgeBorder: "rgba(234,179,8,0.2)",
+      badgeLabel: "Pendente",
+    },
+    FAILED: {
+      icon: XCircle,
+      label: "Pagamento não Confirmado",
+      description: "Houve um problema com a transação. Por favor, entre em contato ou tente novamente.",
+      iconBg: "rgba(239,68,68,0.1)",
+      iconColor: "#dc2626",
+      badgeBg: "rgba(239,68,68,0.08)",
+      badgeColor: "#dc2626",
+      badgeBorder: "rgba(239,68,68,0.2)",
+      badgeLabel: "Falhou",
+    },
+    CANCELLED: {
+      icon: XCircle,
+      label: "Pedido Cancelado",
+      description: "Este pedido foi cancelado. Entre em contato com suporte se necessário.",
+      iconBg: "rgba(239,68,68,0.1)",
+      iconColor: "#dc2626",
+      badgeBg: "rgba(239,68,68,0.08)",
+      badgeColor: "#dc2626",
+      badgeBorder: "rgba(239,68,68,0.2)",
+      badgeLabel: "Cancelado",
+    },
+    REFUNDED: {
+      icon: XCircle,
+      label: "Pagamento Estornado",
+      description: "O valor foi estornado para sua conta.",
+      iconBg: "rgba(239,68,68,0.1)",
+      iconColor: "#dc2626",
+      badgeBg: "rgba(239,68,68,0.08)",
+      badgeColor: "#dc2626",
+      badgeBorder: "rgba(239,68,68,0.2)",
+      badgeLabel: "Estornado",
+    },
+  };
+
+  const cfg = statusConfig[order.status as keyof typeof statusConfig] ?? statusConfig.PENDING;
+  const StatusIcon = cfg.icon;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white py-12 px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Status Card */}
-        <div className="bg-zinc-900/40 border border-zinc-900 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            {order.status === "PAID" ? (
-              <div className="h-14 w-14 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400">
-                <CheckCircle2 size={32} />
-              </div>
-            ) : order.status === "PENDING" ? (
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <Clock size={32} className="animate-pulse" />
-              </div>
-            ) : (
-              <div className="h-14 w-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                <XCircle size={32} />
-              </div>
-            )}
+    <div
+      className="min-h-screen pb-12"
+      style={{ background: "#F6F8FC", color: "#061337", fontFamily: "var(--font-inter, Inter, sans-serif)" }}
+    >
+      {/* ── Header ─────────────────────────── */}
+      <header className="sticky top-0 z-40 px-4 pt-4 pb-2" style={{ background: "#F6F8FC" }}>
+        <div
+          className="flex items-center gap-3 bg-white rounded-2xl px-5 py-3.5 max-w-4xl mx-auto"
+          style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}
+        >
+          <Link
+            href="/"
+            className="p-2 rounded-xl transition-colors hover:bg-[#F6F8FC]"
+            aria-label="Voltar ao início"
+            style={{ color: "#061337" }}
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div className="h-4 w-px mx-1" style={{ background: "#e5e7eb" }} />
+          <Link href="/">
+            <Image src="/logo_clics.png" alt="CLICS" width={30} height={30} className="w-8 h-8 object-contain" />
+          </Link>
+          <div className="flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#9ca3af" }}>
+              Pedido #{order.orderNumber}
+            </p>
+          </div>
+          {/* Badge status */}
+          <span
+            className="text-xs font-bold px-3 py-1 rounded-full"
+            style={{
+              background: cfg.badgeBg,
+              color: cfg.badgeColor,
+              border: `1px solid ${cfg.badgeBorder}`,
+            }}
+          >
+            {cfg.badgeLabel}
+          </span>
+        </div>
+      </header>
 
-            <div>
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Código do Pedido: {order.orderNumber}</span>
-              <h1 className="text-xl md:text-2xl font-black text-white mt-0.5">
-                {order.status === "PAID"
-                  ? "Pagamento Aprovado!"
-                  : order.status === "PENDING"
-                  ? "Aguardando Pagamento"
-                  : "Pagamento não Confirmado"}
+      {/* ── Conteúdo ───────────────────────── */}
+      <main className="max-w-4xl mx-auto px-4 pt-6 space-y-5">
+
+        {/* ── Status Card ── */}
+        <div className="bg-white rounded-3xl p-6 md:p-8" style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: cfg.iconBg }}
+            >
+              <StatusIcon size={32} style={{ color: cfg.iconColor }} className={order.status === "PENDING" ? "animate-pulse" : ""} />
+            </div>
+            <div className="text-center sm:text-left">
+              <h1
+                className="text-xl md:text-2xl font-bold"
+                style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}
+              >
+                {cfg.label}
               </h1>
-              <p className="text-zinc-500 text-xs mt-1">
-                {order.status === "PAID"
-                  ? "Seus downloads já estão liberados abaixo. Aproveite!"
-                  : order.status === "PENDING"
-                  ? "Assim que o Mercado Pago confirmar a transação, suas fotos estarão disponíveis para baixar."
-                  : "Houve um problema com a transação. Tente efetuar o pagamento novamente."}
-              </p>
+              <p className="mt-1 text-sm" style={{ color: "#6b7280" }}>{cfg.description}</p>
             </div>
           </div>
 
-          {/* Pay Button / Receipt Details */}
-          {order.status === "PENDING" && payUrl && !isExpired && (
-            <a
-              href={payUrl}
-              className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-xl text-sm shadow-lg shadow-violet-500/25 transition-all w-full md:w-auto text-center justify-center cursor-pointer"
+          {/* Token expirado */}
+          {isExpired && order.status === "PAID" && (
+            <div
+              className="mt-5 p-4 rounded-2xl text-sm"
+              style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", color: "#d97706" }}
             >
-              <CreditCard size={16} />
-              Pagar com Mercado Pago
-            </a>
+              ⚠ O link de acesso expirou. O prazo para downloads é de 30 dias após a compra.
+            </div>
           )}
         </div>
 
-        {/* Info Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Items / Downloads */}
-          <div className="md:col-span-2 space-y-6">
-            <div className="bg-zinc-900/20 border border-zinc-900 rounded-3xl p-6 space-y-6">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-zinc-900 flex items-center gap-2">
-                <ShoppingBag size={16} className="text-violet-400" />
+        {/* ── Grid de conteúdo ── */}
+        <div className="grid md:grid-cols-3 gap-5">
+
+          {/* ── Fotos / Downloads ── */}
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-3xl p-6 space-y-5" style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}>
+              <h2
+                className="text-xs font-bold uppercase tracking-wider flex items-center gap-2 pb-3"
+                style={{
+                  fontFamily: "var(--font-poppins, Poppins, sans-serif)",
+                  color: "#9ca3af",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
+                <ShoppingBag size={14} style={{ color: "#159BEF" }} />
                 Fotos do Pedido ({order.items.length})
-              </h3>
+              </h2>
 
-              {isExpired && order.status === "PAID" && (
-                <div className="p-4 bg-amber-950/40 border border-amber-900/50 rounded-2xl text-amber-300 text-xs">
-                  Atenção: O link de acesso expirou. O prazo limite para downloads é de 30 dias após a compra.
-                </div>
-              )}
-
-              <div className="space-y-4 divide-y divide-zinc-900/50">
+              <div className="space-y-3">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-4 pt-4 first:pt-0">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="h-16 w-16 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden flex-shrink-0">
-                        <img src={item.photo.previewUrl} alt={item.photo.originalFileName} className="h-full w-full object-cover" />
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-4"
+                    style={{ borderBottom: "1px solid #f3f4f6", paddingBottom: "12px" }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0"
+                        style={{ border: "1px solid #e5e7eb" }}
+                      >
+                        <img
+                          src={item.photo.previewUrl}
+                          alt={item.photo.originalFileName}
+                          className="h-full w-full object-cover"
+                        />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs">{item.photo.originalFileName}</p>
-                        <p className="text-xs text-zinc-500 mt-1">{formatCurrency(item.price)}</p>
+                        <p className="text-xs font-semibold truncate max-w-[180px] sm:max-w-xs" style={{ color: "#061337" }}>
+                          {item.photo.originalFileName}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: "#6b7280" }}>
+                          {formatCurrency(item.price)}
+                        </p>
                         {item.downloadCount > 0 && (
-                          <span className="text-[10px] text-zinc-600 mt-1 block">
-                            Baixada {item.downloadCount} {item.downloadCount === 1 ? "vez" : "vezes"}
+                          <span className="text-[10px]" style={{ color: "#9ca3af" }}>
+                            Baixada {item.downloadCount}x
                           </span>
                         )}
                       </div>
@@ -178,7 +262,12 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                     {order.status === "PAID" && !isExpired && (
                       <a
                         href={`/api/download/${item.photoId}?token=${token}`}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 hover:bg-violet-600 text-zinc-300 hover:text-white transition-all border border-zinc-800 hover:border-violet-500 shadow-md flex-shrink-0"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl transition-all hover:-translate-y-0.5 flex-shrink-0"
+                        style={{
+                          background: "linear-gradient(135deg, #159BEF, #7B3FF2)",
+                          boxShadow: "0 4px 12px rgba(21,155,239,0.3)",
+                          color: "white",
+                        }}
                         title="Baixar foto original"
                         download
                       >
@@ -191,50 +280,80 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
             </div>
           </div>
 
-          {/* Details / Summary */}
-          <div className="space-y-6">
-            <div className="bg-zinc-900/40 border border-zinc-900 rounded-3xl p-6 space-y-6">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-zinc-900">
+          {/* ── Sidebar ── */}
+          <div className="space-y-5">
+
+            {/* Resumo financeiro */}
+            <div className="bg-white rounded-3xl p-6 space-y-4" style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}>
+              <h2
+                className="text-xs font-bold uppercase tracking-wider pb-3"
+                style={{
+                  fontFamily: "var(--font-poppins, Poppins, sans-serif)",
+                  color: "#9ca3af",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
                 Resumo do Pedido
-              </h3>
+              </h2>
 
-              <div className="space-y-4">
-                {/* Comprador */}
-                <div className="space-y-2">
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Comprador</span>
-                  <div className="space-y-1.5 text-xs text-zinc-300">
-                    <div className="flex items-center gap-2">
-                      <User size={12} className="text-zinc-500" />
-                      <span>{order.customerName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={12} className="text-zinc-500" />
-                      <span className="truncate">{order.customerEmail}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone size={12} className="text-zinc-500" />
-                      <span>{order.customerPhone}</span>
-                    </div>
+              {/* Comprador */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#9ca3af" }}>Comprador</p>
+                <div className="space-y-1.5 text-xs" style={{ color: "#6b7280" }}>
+                  <div className="flex items-center gap-2">
+                    <User size={12} style={{ color: "#159BEF" }} />
+                    <span>{order.customerName}</span>
                   </div>
-                </div>
-
-                {/* Resumo financeiro */}
-                <div className="space-y-2 pt-2 border-t border-zinc-900">
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Valores</span>
-                  <div className="flex justify-between items-center text-xs text-zinc-400">
-                    <span>Fotos ({order.items.length})</span>
-                    <span>{formatCurrency(order.totalAmount)}</span>
+                  <div className="flex items-center gap-2">
+                    <Mail size={12} style={{ color: "#159BEF" }} />
+                    <span className="truncate">{order.customerEmail}</span>
                   </div>
-                  <div className="flex justify-between items-center text-sm pt-1.5 border-t border-zinc-900/50">
-                    <span className="font-bold text-white">Total Pago</span>
-                    <span className="font-black text-violet-400">{formatCurrency(order.totalAmount)}</span>
+                  <div className="flex items-center gap-2">
+                    <Phone size={12} style={{ color: "#159BEF" }} />
+                    <span>{order.customerPhone}</span>
                   </div>
                 </div>
               </div>
+
+              {/* Valores */}
+              <div className="space-y-2 pt-3" style={{ borderTop: "1px solid #e5e7eb" }}>
+                <div className="flex justify-between text-xs" style={{ color: "#6b7280" }}>
+                  <span>Fotos ({order.items.length})</span>
+                  <span>{formatCurrency(order.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid #e5e7eb" }}>
+                  <span className="font-bold text-sm" style={{ color: "#061337" }}>Total</span>
+                  <span
+                    className="font-black text-lg"
+                    style={{
+                      fontFamily: "var(--font-poppins, Poppins, sans-serif)",
+                      background: "linear-gradient(90deg, #159BEF, #7B3FF2)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {formatCurrency(order.totalAmount)}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {/* Link para a galeria */}
+            <Link
+              href={`/album/${order.album?.title ? "#" : "/"}`}
+              className="block w-full text-center py-3 rounded-2xl text-sm font-semibold transition-all hover:-translate-y-0.5"
+              style={{
+                background: "white",
+                color: "#061337",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 2px 8px rgba(6,19,55,0.06)",
+              }}
+            >
+              ← Voltar ao início
+            </Link>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
