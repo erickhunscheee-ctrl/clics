@@ -5,17 +5,36 @@ import { getCurrentUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
 import { Search, Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight, ShoppingCart } from "lucide-react";
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
+import { CartHeaderButton } from "@/components/cart/cart-header-button";
+import { SearchBar } from "@/components/home/search-bar";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+interface HomeProps {
+  searchParams: Promise<{ search?: string }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const user = await getCurrentUser();
+  const { search } = await searchParams;
+  const query = search || "";
+
   const userHomeHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/usuario";
   const userHomeLabel = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "Painel fotografo" : "Minha area";
   const sellerHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/cadastro";
 
   const albums = await prisma.album.findMany({
-    where: { status: "PUBLISHED" },
+    where: {
+      status: "PUBLISHED",
+      OR: query
+        ? [
+            { title: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+            { location: { contains: query, mode: "insensitive" } },
+            { photographer: { name: { contains: query, mode: "insensitive" } } },
+          ]
+        : undefined,
+    },
     include: {
       photographer: { select: { name: true, avatarUrl: true } },
       _count: { select: { photos: true } },
@@ -60,10 +79,9 @@ export default async function Home() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            {/* Search icon */}
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" aria-label="Buscar">
-              <Search size={20} style={{ color: "#061337" }} />
-            </button>
+            <SearchBar className="hidden lg:flex w-60 py-1.5" />
+
+            <CartHeaderButton />
 
             {/* Divider */}
             <div className="h-6 w-px bg-gray-200 mx-1" />
@@ -120,9 +138,7 @@ export default async function Home() {
               </Link>
 
               <div className="flex items-center gap-4">
-                <button aria-label="Buscar" className="transition-opacity hover:opacity-70">
-                  <Search size={22} style={{ color: "#061337" }} />
-                </button>
+                <CartHeaderButton iconSize={22} />
                 <button aria-label="Notificações" className="transition-opacity hover:opacity-70">
                   <Bell size={22} style={{ color: "#061337" }} />
                 </button>
@@ -143,15 +159,7 @@ export default async function Home() {
             </div>
 
             {/* Search bar */}
-            <div className="flex items-center gap-3 bg-[#F6F8FC] rounded-full px-4 py-2.5 border border-gray-200">
-              <Search size={18} style={{ color: "#9ca3af" }} className="flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Buscar fotos incríveis..."
-                className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400"
-                style={{ color: "#061337" }}
-              />
-            </div>
+            <SearchBar />
           </div>
         </div>
       </header>
