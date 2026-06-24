@@ -23,7 +23,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
   const startLoading = useCallback(() => setIsLoading(true), []);
   const stopLoading = useCallback(() => setIsLoading(false), []);
 
-  const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
+  const withLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
     setIsLoading(true);
     try {
       return await fn();
