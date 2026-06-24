@@ -346,10 +346,10 @@ function CheckoutContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass} style={labelStyle}>WhatsApp / Telefone</label>
+                  <label className={labelClass} style={labelStyle}>WhatsApp / Telefone {showCardForm ? "" : "(Opcional)"}</label>
                   <input
                     type="tel"
-                    required
+                    required={showCardForm}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className={inputClass}
@@ -358,10 +358,10 @@ function CheckoutContent() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass} style={labelStyle}>CPF (obrigatório para o pagamento)</label>
+                  <label className={labelClass} style={labelStyle}>CPF {showCardForm ? "(Obrigatório para Cartão)" : "(Opcional)"}</label>
                   <input
                     type="text"
-                    required
+                    required={showCardForm}
                     value={document}
                     onChange={(e) => setDocument(e.target.value)}
                     className={inputClass}
