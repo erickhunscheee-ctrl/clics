@@ -61,13 +61,16 @@ function AlbumCard({ album, onClose }: { album: Album; onClose: () => void }) {
         {/* Favorite button */}
         <div className="absolute top-2.5 right-2.5">
           <FavoriteButton
+            type="album"
             album={{
               id: album.id,
               title: album.title,
               slug: album.slug,
               coverImageUrl: album.coverImageUrl,
+              defaultPhotoPrice: album.defaultPhotoPrice,
             }}
-            size="sm"
+            size={16}
+            className="bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white"
           />
         </div>
 
