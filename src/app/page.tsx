@@ -394,7 +394,7 @@ export default async function Home({ searchParams }: HomeProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-10 mt-8" style={{ background: "white", borderColor: "#e5e7eb" }}>
+      <footer className="border-t py-10 pb-28 md:pb-10 mt-8" style={{ background: "white", borderColor: "#e5e7eb" }}>
         <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style={{ color: "#9ca3af" }}>
           <div className="flex items-center gap-2">
             <Image src="/logo_clics.png" alt="CLICS" width={24} height={24} className="w-6 h-6 object-contain" />

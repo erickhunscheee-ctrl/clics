@@ -26,7 +26,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
       <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
         <div className="pointer-events-auto w-screen max-w-md">
-          <div className="flex h-full flex-col overflow-y-auto bg-[#F6F8FC] border-l border-slate-200/60 shadow-2xl">
+          <div className="flex h-full flex-col overflow-hidden bg-[#F6F8FC] border-l border-slate-200/60 shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200/80 bg-white px-6 py-6">
               <div className="flex items-center gap-2">
