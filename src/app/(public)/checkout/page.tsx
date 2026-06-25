@@ -462,13 +462,16 @@ function CheckoutContent() {
                       className={inputClass + " cursor-pointer"}
                       style={{ ...inputStyle, background: "white" }}
                     >
-                      <option value="1">1x sem juros de {formatCurrency(totalAmount)}</option>
-                      <option value="2">2x de {formatCurrency(totalAmount / 2)}</option>
-                      <option value="3">3x de {formatCurrency(totalAmount / 3)}</option>
-                      <option value="4">4x de {formatCurrency(totalAmount / 4)}</option>
-                      <option value="6">6x de {formatCurrency(totalAmount / 6)}</option>
-                      <option value="12">12x de {formatCurrency(totalAmount / 12)}</option>
+                      <option value="1">1x de {formatCurrency(totalAmount)}</option>
+                      <option value="2">2x - valor final calculado pelo Mercado Pago</option>
+                      <option value="3">3x - valor final calculado pelo Mercado Pago</option>
+                      <option value="4">4x - valor final calculado pelo Mercado Pago</option>
+                      <option value="6">6x - valor final calculado pelo Mercado Pago</option>
+                      <option value="12">12x - valor final calculado pelo Mercado Pago</option>
                     </select>
+                    <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "#9ca3af" }}>
+                      Parcelas acima de 1x podem ter juros definidos pelo Mercado Pago antes da confirmacao.
+                    </p>
                   </div>
                 </div>
               )}
