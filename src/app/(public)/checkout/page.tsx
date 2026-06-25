@@ -95,9 +95,15 @@ function CheckoutContent() {
   // Instância do Mercado Pago no Cliente
   const [mpInstance, setMpInstance] = useState<MercadoPagoInstance | null>(null);
 
-  const handleScriptLoad = () => {
+  const handleScriptLoad = async () => {
     if (typeof window !== "undefined" && window.MercadoPago) {
-      const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
+      const publicKey =
+        process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY ||
+        (await fetch("/api/checkout/mercadopago/public-key")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data: { publicKey?: string } | null) => data?.publicKey)
+          .catch(() => null));
+
       if (!publicKey) {
         setError("Chave publica do Mercado Pago nao configurada.");
         return;

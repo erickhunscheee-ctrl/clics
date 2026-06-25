@@ -1,7 +1,16 @@
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 
+const mercadoPagoAccessToken =
+  process.env.MERCADO_PAGO_ACCESS_TOKEN ||
+  process.env.mercado_pago_access_token ||
+  process.env.mercado_pago_acess_token;
+
+if (!mercadoPagoAccessToken) {
+  throw new Error("Token de acesso do Mercado Pago nao configurado.");
+}
+
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  accessToken: mercadoPagoAccessToken,
 });
 
 interface CreatePreferenceParams {
