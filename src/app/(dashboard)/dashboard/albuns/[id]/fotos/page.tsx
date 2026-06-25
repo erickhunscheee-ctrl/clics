@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Upload, Trash2, Eye, EyeOff, Check, Edit2, Sparkles, DollarSign, X, Image } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, Eye, EyeOff, Check, Edit2, DollarSign, X, Image as ImageIcon, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/money";
 
 interface Photo {
@@ -17,7 +17,12 @@ interface Photo {
 interface Album {
   id: string;
   title: string;
+  coverImageUrl: string | null;
   defaultPhotoPrice: number;
+}
+
+interface AlbumCoverResponse {
+  coverImageUrl: string | null;
 }
 
 interface PhotoManagementPageProps {
@@ -34,6 +39,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
+  const [coverUpdatingPhotoId, setCoverUpdatingPhotoId] = useState<string | null>(null);
 
   // Seleção múltipla
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
@@ -148,6 +154,34 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
     }
   };
 
+  const handleSetCover = async (photo: Photo) => {
+    setCoverUpdatingPhotoId(photo.id);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/albuns/${albumId}/cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoId: photo.id }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Falha ao definir capa.");
+      }
+
+      const updatedAlbum = (await res.json()) as AlbumCoverResponse;
+      setAlbum((prev) =>
+        prev ? { ...prev, coverImageUrl: updatedAlbum.coverImageUrl } : prev
+      );
+      router.refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao definir capa.");
+    } finally {
+      setCoverUpdatingPhotoId(null);
+    }
+  };
+
   // Preço individual
   const handleSaveIndividualPrice = async (photo: Photo) => {
     try {
@@ -239,7 +273,9 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">Fotos: {album?.title}</h1>
-          <p className="text-zinc-400 mt-1">Carregue novas imagens e defina os valores por foto.</p>
+          <p className="text-zinc-400 mt-1">
+            Carregue novas imagens, defina os valores por foto e use a estrela para escolher a capa do album.
+          </p>
         </div>
 
         {/* Input de Upload Oculto */}
@@ -315,7 +351,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
       {photos.length === 0 ? (
         <div className="text-center py-20 bg-zinc-900/10 border border-zinc-800 rounded-3xl space-y-4">
           <div className="h-14 w-14 rounded-2xl bg-zinc-800/40 flex items-center justify-center mx-auto text-zinc-500">
-            <Image size={28} />
+            <ImageIcon size={28} />
           </div>
           <h3 className="text-lg font-bold text-white">Nenhuma foto no álbum</h3>
           <p className="text-zinc-500 max-w-sm mx-auto text-sm">
@@ -324,7 +360,10 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {photos.map((photo) => (
+          {photos.map((photo) => {
+              const isCover = album?.coverImageUrl === photo.previewUrl;
+
+              return (
             <div
               key={photo.id}
               onClick={() => {
@@ -357,6 +396,12 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                   alt={photo.originalFileName}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
+                {isCover && (
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg bg-violet-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
+                    <Star size={11} fill="currentColor" />
+                    Capa
+                  </div>
+                )}
                 {photo.status === "HIDDEN" && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center gap-2 text-zinc-400 font-semibold text-xs">
                     <EyeOff size={14} />
@@ -406,6 +451,18 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                   {/* Status & Deletar */}
                   <div className="flex items-center gap-1">
                     <button
+                      onClick={() => handleSetCover(photo)}
+                      disabled={coverUpdatingPhotoId === photo.id || isCover}
+                      className={`p-1.5 rounded-lg border transition-colors ${
+                        isCover
+                          ? "bg-violet-500/15 border-violet-500/30 text-violet-300 cursor-default"
+                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-yellow-300"
+                      }`}
+                      title={isCover ? "Foto de capa" : "Definir como capa"}
+                    >
+                      <Star size={14} fill={isCover ? "currentColor" : "none"} />
+                    </button>
+                    <button
                       onClick={() => handleToggleStatus(photo)}
                       className={`p-1.5 rounded-lg border transition-colors ${
                         photo.status === "ACTIVE"
@@ -425,7 +482,8 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                 </div>
               </div>
             </div>
-          ))}
+              );
+            })}
         </div>
       )}
 

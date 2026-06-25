@@ -3,6 +3,7 @@
 import { useCart } from "./cart-provider";
 import { X, Trash2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { formatCurrency } from "@/lib/money";
 
 interface CartDrawerProps {
@@ -14,10 +15,10 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { items, albumSlug, removeFromCart, clearCart, totalAmount } = useCart();
   const checkoutHref = albumSlug ? `/checkout?album=${albumSlug}` : "/checkout";
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed inset-0 z-[180] overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[300] overflow-hidden">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
@@ -147,6 +148,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
