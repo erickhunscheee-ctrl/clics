@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 import { batchPriceSchema } from "@/lib/validators/photo";
 
 // PUT /api/fotos/batch - Atualizar preços de fotos em lote
 export async function PUT(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const body = await request.json();
 
     const validatedData = batchPriceSchema.parse(body);

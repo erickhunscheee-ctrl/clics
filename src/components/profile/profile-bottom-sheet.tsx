@@ -168,6 +168,10 @@ export function ProfileBottomSheet() {
       : "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)";
 
   const paidCount = orders.filter((o) => o.status === "PAID").length;
+  const publicAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.trim().toLowerCase();
+  const canAccessDashboard =
+    Boolean(publicAdminEmail) &&
+    user?.email.trim().toLowerCase() === publicAdminEmail;
 
   return (
     <div className="fixed inset-0 z-[120] overflow-hidden flex items-end justify-center px-[10px]">
@@ -385,7 +389,7 @@ export function ProfileBottomSheet() {
                       <ChevronRight size={16} className="text-slate-300" />
                     </Link>
 
-                    {(user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN") && (
+                    {canAccessDashboard && (
                       <Link
                         href="/dashboard"
                         onClick={handleClose}

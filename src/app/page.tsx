@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isAdminEmail } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
 import { Bell, User, Calendar, MapPin, Image as ImageIcon, Sparkles, ArrowRight } from "lucide-react";
 import { MobileNavbar } from "@/components/public-album/mobile-navbar";
@@ -23,9 +23,10 @@ export default async function Home({ searchParams }: HomeProps) {
   const { search } = await searchParams;
   const query = search || "";
 
-  const userHomeHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/usuario";
-  const userHomeLabel = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "Painel fotografo" : "Minha area";
-  const sellerHref = user?.role === "PHOTOGRAPHER" || user?.role === "ADMIN" ? "/dashboard" : "/cadastro";
+  const canAccessDashboard = isAdminEmail(user?.email);
+  const userHomeHref = canAccessDashboard ? "/dashboard" : "/usuario";
+  const userHomeLabel = canAccessDashboard ? "Painel fotografo" : "Minha area";
+  const sellerHref = canAccessDashboard ? "/dashboard" : "/cadastro";
 
   const albums = await prisma.album.findMany({
     where: {

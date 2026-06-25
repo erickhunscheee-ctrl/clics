@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { generatePresignedUploadUrl } from "@/lib/r2";
 import { v4 as uuidv4 } from "uuid";
 
@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 // Recebe metadados (fileName, contentType) e gera presigned URL do R2 para upload direto do browser.
 export async function POST(request: Request) {
   try {
-    await requireUser();
+    await requirePhotographer();
     const { fileName, contentType } = await request.json();
 
     if (!fileName || !contentType) {

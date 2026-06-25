@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { formatCurrency } from "@/lib/money";
 import { Prisma } from "@prisma/client";
-import { Camera, FolderOpen, DollarSign, Receipt, Eye } from "lucide-react";
+import { Camera, FolderOpen, DollarSign, Receipt } from "lucide-react";
 import Link from "next/link";
 
 type OrderWithAlbum = Prisma.OrderGetPayload<{
@@ -10,9 +10,7 @@ type OrderWithAlbum = Prisma.OrderGetPayload<{
 }>;
 
 export default async function DashboardPage() {
-  const user = await requireUser();
-  const allowedEmail = process.env.ADMIN_EMAIL;
-  const isAllowedToCreate = user.role === "ADMIN" || (allowedEmail && user.email === allowedEmail);
+  const user = await requirePhotographer();
 
   // Busca dados de estatísticas dos álbuns e pedidos do fotógrafo
   const albums = await prisma.album.findMany({
@@ -176,11 +174,9 @@ export default async function DashboardPage() {
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-6 rounded-2xl space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-bold text-white">Meus Álbuns</h2>
-            {isAllowedToCreate && (
-              <Link href="/dashboard/albuns/novo" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
-                + Criar Álbum
-              </Link>
-            )}
+            <Link href="/dashboard/albuns/novo" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
+              + Criar Album
+            </Link>
           </div>
 
           {albums.length === 0 ? (

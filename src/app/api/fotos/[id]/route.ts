@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 import { deletePreviewFromR2 } from "@/lib/r2";
 import { deleteFromDrive } from "@/lib/google-drive";
@@ -13,7 +13,7 @@ interface Params {
 // PUT /api/fotos/[id] - Editar preço e status da foto
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const photoId = (await params).id;
     const body = await request.json();
 
@@ -60,7 +60,7 @@ export async function PUT(request: Request, { params }: Params) {
 // DELETE /api/fotos/[id] - Excluir foto permanentemente
 export async function DELETE(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const photoId = (await params).id;
 
     const photo = await prisma.photo.findUnique({

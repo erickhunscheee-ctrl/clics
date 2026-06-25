@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FolderPlus, Calendar, MapPin, Image as ImageIcon, ExternalLink, Lock } from "lucide-react";
-import { formatCurrency } from "@/lib/money";
-import { createClient } from "@/lib/supabase/client";
 
 interface Album {
   id: string;
@@ -25,8 +23,7 @@ export default function AlbunsListPage() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAllowedToCreate, setIsAllowedToCreate] = useState(false);
-  const supabase = createClient();
+  const isAllowedToCreate = true;
 
   useEffect(() => {
     async function loadAlbums() {
@@ -39,25 +36,16 @@ export default function AlbunsListPage() {
           const data = await res.json().catch(() => ({}));
           setError(data.message || `Erro ${res.status} ao carregar álbuns.`);
         }
-      } catch (err: any) {
-        setError(err.message || "Erro de rede ao carregar álbuns.");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Erro de rede ao carregar albuns.";
+        setError(message);
         console.error("Erro ao carregar álbuns:", err);
       } finally {
         setLoading(false);
       }
     }
 
-    async function checkPermission() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const allowedEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        const isEmailAllowed = !allowedEmail || user.email === allowedEmail;
-        setIsAllowedToCreate(isEmailAllowed);
-      }
-    }
-
     loadAlbums();
-    checkPermission();
   }, []);
 
   return (

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 import { uploadPreviewToR2 } from "@/lib/r2";
 import { uploadOriginalToDrive } from "@/lib/google-drive";
@@ -16,7 +16,7 @@ interface Params {
 // salva o preview comprimido no R2 e o original no Google Drive.
 export async function POST(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const albumId = (await params).id;
 
     // Recebe o arquivo via multipart form data
