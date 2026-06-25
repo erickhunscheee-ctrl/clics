@@ -13,8 +13,29 @@ import Image from "next/image";
 // Tipagem global do script do Mercado Pago
 declare global {
   interface Window {
-    MercadoPago: any;
+    MercadoPago?: new (
+      publicKey: string,
+      options?: { locale?: string }
+    ) => MercadoPagoInstance;
   }
+}
+
+interface MercadoPagoInstance {
+  createCardToken: (cardData: {
+    cardNumber: string;
+    cardholderName: string;
+    cardExpirationMonth: string;
+    cardExpirationYear: string;
+    securityCode: string;
+    identificationType?: string;
+    identificationNumber?: string;
+  }) => Promise<{ id?: string }>;
+  getPaymentMethods: (params: { bin: string }) => Promise<{
+    results?: Array<{
+      id?: string;
+      issuer?: { id?: number | string };
+    }>;
+  }>;
 }
 
 export default function CheckoutPage() {
@@ -46,9 +67,7 @@ function CheckoutContent() {
   const returnAlbumSlug = albumSlug || searchParams.get("album");
   const galleryHref = returnAlbumSlug ? `/album/${returnAlbumSlug}` : "/";
 
-  // Dados do Comprador
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // Dados complementares do comprador
   const [phone, setPhone] = useState("");
   const [document, setDocument] = useState("");
 
@@ -74,22 +93,20 @@ function CheckoutContent() {
   } | null>(null);
 
   // Instância do Mercado Pago no Cliente
-  const [mpInstance, setMpInstance] = useState<any>(null);
+  const [mpInstance, setMpInstance] = useState<MercadoPagoInstance | null>(null);
 
   const handleScriptLoad = () => {
     if (typeof window !== "undefined" && window.MercadoPago) {
-      const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "APP_USR-caa24e6c-761a-4366-926f-9a12bec46fe9";
+      const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
+      if (!publicKey) {
+        setError("Chave publica do Mercado Pago nao configurada.");
+        return;
+      }
       const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
       setMpInstance(mp);
       setSdkReady(true);
     }
   };
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.MercadoPago && !mpInstance) {
-      handleScriptLoad();
-    }
-  }, []);
 
   // Polling para checar pagamento do Pix
   useEffect(() => {
@@ -123,7 +140,6 @@ function CheckoutContent() {
   const handleGeneratePix = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (items.length === 0 || !albumId) return;
-    if (!e.currentTarget.form?.reportValidity()) return;
     setLoadingMethod("PIX");
     setError(null);
     try {
@@ -133,8 +149,6 @@ function CheckoutContent() {
         body: JSON.stringify({
           albumId,
           photoIds: items.map((i) => i.id),
-          customerName: name,
-          customerEmail: email,
           customerPhone: phone,
           customerDocument: document || null,
           paymentMethod: "PIX",
@@ -171,20 +185,29 @@ function CheckoutContent() {
       const [expiryMonth, expiryYear] = cardExpiry.split("/");
       if (!expiryMonth || !expiryYear) throw new Error("Data de vencimento inválida. Use MM/AA.");
 
+      const cleanDocument = document.replace(/\D/g, "");
+      if (cleanDocument.length !== 11) throw new Error("Informe um CPF valido para pagar com cartao.");
+
       const cardTokenResponse = await mpInstance.createCardToken({
         cardNumber: cardNumber.replace(/\s/g, ""),
         cardholderName: cardName,
         cardExpirationMonth: expiryMonth.trim(),
         cardExpirationYear: "20" + expiryYear.trim(),
         securityCode: cardCvv,
+        identificationType: "CPF",
+        identificationNumber: cleanDocument,
       });
       if (!cardTokenResponse?.id) throw new Error("Falha ao validar os dados do cartão.");
 
-      let detectedMethodId = "visa";
+      let detectedMethodId: string | null = null;
+      let issuerId: number | null = null;
       try {
         const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
         const paymentMethods = await mpInstance.getPaymentMethods({ bin });
-        if (paymentMethods?.results?.length > 0) detectedMethodId = paymentMethods.results[0].id;
+        const paymentMethod = paymentMethods?.results?.[0];
+        if (paymentMethod?.id) detectedMethodId = paymentMethod.id;
+        const parsedIssuerId = Number(paymentMethod?.issuer?.id);
+        if (Number.isInteger(parsedIssuerId) && parsedIssuerId > 0) issuerId = parsedIssuerId;
       } catch { /* usa padrão */ }
 
       const res = await fetch("/api/checkout/mercadopago", {
@@ -193,14 +216,13 @@ function CheckoutContent() {
         body: JSON.stringify({
           albumId,
           photoIds: items.map((i) => i.id),
-          customerName: name,
-          customerEmail: email,
           customerPhone: phone,
           customerDocument: document || null,
           paymentMethod: "CREDIT_CARD",
           cardToken: cardTokenResponse.id,
           installments: parseInt(installments),
           paymentMethodId: detectedMethodId,
+          issuerId,
         }),
       });
       if (!res.ok) {
@@ -285,7 +307,7 @@ function CheckoutContent() {
               >
                 Finalizar Compra
               </h1>
-              <p className="text-[11px]" style={{ color: "#9ca3af" }}>Preencha seus dados para receber as fotos.</p>
+              <p className="text-[11px]" style={{ color: "#9ca3af" }}>Escolha a forma de pagamento para receber as fotos.</p>
             </div>
           </div>
           {/* Badge segurança */}
@@ -302,7 +324,7 @@ function CheckoutContent() {
         {/* ── Formulário ── */}
         <div className="md:col-span-3 space-y-4">
 
-          {/* Card: Dados do Comprador */}
+          {/* Card: Pagamento */}
           <div className="bg-white rounded-3xl p-6 md:p-8 space-y-5" style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}>
             <h2
               className="text-base font-bold flex items-center gap-2"
@@ -314,36 +336,10 @@ function CheckoutContent() {
               >
                 <CreditCard size={14} className="text-white" />
               </div>
-              Dados do Comprador
+              Dados do Pagamento
             </h2>
 
             <form onSubmit={handlePayCard} className="space-y-4">
-              <div>
-                <label className={labelClass} style={labelStyle}>Nome Completo</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={inputClass}
-                  style={inputStyle}
-                  placeholder="Seu nome completo"
-                />
-              </div>
-
-              <div>
-                <label className={labelClass} style={labelStyle}>E-mail (para receber os downloads)</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
-                  style={inputStyle}
-                  placeholder="exemplo@email.com"
-                />
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass} style={labelStyle}>WhatsApp / Telefone {showCardForm ? "" : "(Opcional)"}</label>

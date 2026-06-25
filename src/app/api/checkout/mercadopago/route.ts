@@ -3,9 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { checkoutSchema } from "@/lib/validators/checkout";
 import { processTransparentPayment, mapPaymentStatus } from "@/lib/mercadopago";
 import { generateAccessToken } from "@/lib/tokens";
+import { requireUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
     const body = await request.json();
     
     // Validação com Zod
@@ -20,15 +22,16 @@ export async function POST(request: Request) {
     const { 
       albumId, 
       photoIds, 
-      customerName, 
-      customerEmail, 
       customerPhone, 
       customerDocument, 
       paymentMethod,
       cardToken,
       installments,
-      paymentMethodId
+      paymentMethodId,
+      issuerId
     } = parsedData.data;
+    const customerName = user.name || user.email.split("@")[0];
+    const customerEmail = user.email;
 
     if (photoIds.length === 0) {
       return NextResponse.json(
@@ -38,6 +41,17 @@ export async function POST(request: Request) {
     }
 
     // Busca o álbum
+    if (paymentMethod === "CREDIT_CARD") {
+      const cleanDocument = customerDocument?.replace(/\D/g, "") ?? "";
+
+      if (!cardToken || !paymentMethodId || !installments || cleanDocument.length !== 11) {
+        return NextResponse.json(
+          { message: "Dados do cartao incompletos ou invalidos." },
+          { status: 400 }
+        );
+      }
+    }
+
     const album = await prisma.album.findUnique({
       where: { id: albumId, status: "PUBLISHED" },
     });
@@ -117,6 +131,7 @@ export async function POST(request: Request) {
       cardToken,
       installments,
       paymentMethodId,
+      issuerId,
     });
 
     const mappedStatus = mapPaymentStatus(paymentResult.status || "pending");
@@ -141,10 +156,16 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Erro no processamento do checkout:", error);
+    const message = error instanceof Error ? error.message : "";
+
     return NextResponse.json(
-      { message: "Erro interno do servidor ao processar o pagamento." },
-      { status: 500 }
+      {
+        message:
+          message === "Não autenticado"
+            ? "Entre na sua conta para finalizar a compra."
+            : "Erro interno do servidor ao processar o pagamento.",
+      },
+      { status: message === "Não autenticado" ? 401 : 500 }
     );
   }
 }
-

@@ -117,7 +117,32 @@ export interface ProcessPaymentParams {
   cardToken?: string | null;
   installments?: number | null;
   paymentMethodId?: string | null;
+  issuerId?: number | null;
 }
+
+type TransparentPaymentData = {
+  transaction_amount: number;
+  description: string;
+  external_reference: string;
+  notification_url: string;
+  payer: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone: {
+      area_code: string;
+      number: string;
+    };
+    identification?: {
+      type: "CPF" | "CNPJ";
+      number: string;
+    };
+  };
+  payment_method_id?: string;
+  token?: string;
+  installments?: number;
+  issuer_id?: number;
+};
 
 /**
  * Process a transparent payment (PIX or CREDIT_CARD) using Mercado Pago SDK
@@ -136,7 +161,7 @@ export async function processTransparentPayment(params: ProcessPaymentParams) {
   const areaCode = cleanPhone.substring(0, 2) || "11";
   const number = cleanPhone.substring(2) || cleanPhone || "999999999";
 
-  const paymentData: any = {
+  const paymentData: TransparentPaymentData = {
     transaction_amount: params.transactionAmount,
     description: `Pedido #${params.orderNumber} - Fotos`,
     external_reference: params.orderId,
@@ -175,12 +200,23 @@ export async function processTransparentPayment(params: ProcessPaymentParams) {
     if (!params.cardToken) {
       throw new Error("Token do cartão é obrigatório para pagamentos com cartão de crédito.");
     }
+    if (!params.paymentMethodId) {
+      throw new Error("Bandeira do cartao e obrigatoria para pagamentos com cartao de credito.");
+    }
     paymentData.token = params.cardToken;
     paymentData.installments = params.installments || 1;
-    paymentData.payment_method_id = params.paymentMethodId || "visa";
+    paymentData.payment_method_id = params.paymentMethodId;
+    if (params.issuerId) {
+      paymentData.issuer_id = params.issuerId;
+    }
   }
 
-  const result = await payment.create({ body: paymentData });
+  const result = await payment.create({
+    body: paymentData,
+    requestOptions: {
+      idempotencyKey: params.orderId,
+    },
+  });
 
   // Detalhes do Pix
   let pixCopiaECola = null;
@@ -217,4 +253,3 @@ export function mapPaymentStatus(
 
   return statusMap[mpStatus] || "PENDING";
 }
-

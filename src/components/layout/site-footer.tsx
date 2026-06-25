@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Instagram } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -34,7 +33,6 @@ export function SiteFooter() {
             className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[#159BEF]"
           >
             Desenvolvido por Pixels
-            <Instagram size={14} aria-hidden="true" />
             <span>@group.pixels</span>
           </a>
           <Link
