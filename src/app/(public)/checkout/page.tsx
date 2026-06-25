@@ -36,6 +36,88 @@ interface MercadoPagoInstance {
       issuer?: { id?: number | string };
     }>;
   }>;
+  getInstallments: (params: {
+    amount: string;
+    bin: string;
+    paymentTypeId: "credit_card";
+  }) => Promise<MercadoPagoInstallmentResponse>;
+}
+
+type MercadoPagoInstallmentResponse = Array<{
+  payer_costs?: Array<{
+    installments?: number;
+    installment_amount?: number;
+    total_amount?: number;
+    recommended_message?: string;
+    labels?: string[];
+  }>;
+}>;
+
+type InstallmentOption = {
+  installments: number;
+  installmentAmount: number;
+  totalAmount: number;
+  message: string;
+  hasInterest: boolean;
+};
+
+type InstallmentsResult = {
+  bin: string;
+  options: InstallmentOption[];
+  notice: string;
+};
+
+function toCentavosFromReais(value: number) {
+  return Math.round(value * 100);
+}
+
+function buildFallbackInstallments(totalAmount: number): InstallmentOption[] {
+  return Array.from({ length: 12 }, (_, index) => {
+    const installments = index + 1;
+    const installmentAmount = Math.ceil(totalAmount / installments);
+
+    return {
+      installments,
+      installmentAmount,
+      totalAmount,
+      message: `${installments}x de ${formatCurrency(installmentAmount)} sem juros`,
+      hasInterest: false,
+    };
+  });
+}
+
+function normalizeMercadoPagoInstallments(
+  response: MercadoPagoInstallmentResponse,
+  totalAmount: number
+): InstallmentOption[] {
+  const payerCosts = response.flatMap((item) => item.payer_costs ?? []);
+
+  return payerCosts
+    .filter((payerCost) => {
+      const installments = payerCost.installments ?? 0;
+      return installments >= 1 && installments <= 12;
+    })
+    .map((payerCost) => {
+      const installments = payerCost.installments ?? 1;
+      const totalAmountFromMp = toCentavosFromReais(payerCost.total_amount ?? totalAmount / 100);
+      const installmentAmount = toCentavosFromReais(
+        payerCost.installment_amount ?? totalAmountFromMp / installments / 100
+      );
+      const message =
+        payerCost.recommended_message ||
+        `${installments}x de ${formatCurrency(installmentAmount)}${
+          totalAmountFromMp > totalAmount ? ` - total ${formatCurrency(totalAmountFromMp)}` : " sem juros"
+        }`;
+
+      return {
+        installments,
+        installmentAmount,
+        totalAmount: totalAmountFromMp,
+        message,
+        hasInterest: totalAmountFromMp > totalAmount || !(payerCost.labels ?? []).includes("recommended_installment"),
+      };
+    })
+    .sort((a, b) => a.installments - b.installments);
 }
 
 export default function CheckoutPage() {
@@ -77,6 +159,8 @@ function CheckoutContent() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [installments, setInstallments] = useState("1");
+  const [installmentsResult, setInstallmentsResult] = useState<InstallmentsResult | null>(null);
+  const [installmentsLoading, setInstallmentsLoading] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
 
   // Estados de Transação e UI
@@ -94,6 +178,21 @@ function CheckoutContent() {
 
   // Instância do Mercado Pago no Cliente
   const [mpInstance, setMpInstance] = useState<MercadoPagoInstance | null>(null);
+  const cardBin = cardNumber.replace(/\D/g, "").substring(0, 6);
+  const fallbackInstallmentOptions = buildFallbackInstallments(totalAmount);
+  const hasMercadoPagoInstallments =
+    cardBin.length === 6 && installmentsResult?.bin === cardBin && installmentsResult.options.length > 0;
+  const installmentOptions = hasMercadoPagoInstallments
+    ? installmentsResult.options
+    : fallbackInstallmentOptions;
+  const installmentsNotice =
+    cardBin.length < 6
+      ? "Digite os 6 primeiros numeros do cartao para ver os juros reais do Mercado Pago."
+      : installmentsLoading
+        ? "Atualizando parcelas..."
+        : installmentsResult?.bin === cardBin
+          ? installmentsResult.notice
+          : "Carregando o Mercado Pago para consultar os juros reais.";
 
   const handleScriptLoad = async () => {
     if (typeof window !== "undefined" && window.MercadoPago) {
@@ -134,6 +233,56 @@ function CheckoutContent() {
     }, 5000);
     return () => clearInterval(intervalId);
   }, [pixModalData, clearCart, router]);
+
+  useEffect(() => {
+    if (!showCardForm || cardBin.length < 6 || !sdkReady || !mpInstance) return;
+
+    let shouldUpdate = true;
+    void Promise.resolve().then(async () => {
+      if (!shouldUpdate) return;
+      setInstallmentsLoading(true);
+
+      try {
+        const response = await mpInstance.getInstallments({
+          amount: (totalAmount / 100).toFixed(2),
+          bin: cardBin,
+          paymentTypeId: "credit_card",
+        });
+        if (!shouldUpdate) return;
+
+        const mercadoPagoOptions = normalizeMercadoPagoInstallments(response, totalAmount);
+        const fallbackOptions = buildFallbackInstallments(totalAmount);
+        const nextOptions = mercadoPagoOptions.length > 0 ? mercadoPagoOptions : fallbackOptions;
+
+        setInstallmentsResult({
+          bin: cardBin,
+          options: nextOptions,
+          notice:
+            mercadoPagoOptions.length > 0
+              ? "Valores calculados pelo Mercado Pago conforme o cartao informado."
+              : "Nao foi possivel consultar o Mercado Pago para este cartao. Confira o valor final antes de confirmar.",
+        });
+        setInstallments((current) =>
+          nextOptions.some((option) => String(option.installments) === current)
+            ? current
+            : String(nextOptions[0]?.installments ?? 1)
+        );
+      } catch {
+        if (!shouldUpdate) return;
+        setInstallmentsResult({
+          bin: cardBin,
+          options: buildFallbackInstallments(totalAmount),
+          notice: "Nao foi possivel consultar os juros agora. O Mercado Pago validara o valor final ao processar.",
+        });
+      } finally {
+        if (shouldUpdate) setInstallmentsLoading(false);
+      }
+    });
+
+    return () => {
+      shouldUpdate = false;
+    };
+  }, [cardBin, mpInstance, sdkReady, showCardForm, totalAmount]);
 
   const handleCopyPix = () => {
     if (pixModalData) {
@@ -461,16 +610,16 @@ function CheckoutContent() {
                       onChange={(e) => setInstallments(e.target.value)}
                       className={inputClass + " cursor-pointer"}
                       style={{ ...inputStyle, background: "white" }}
+                      disabled={installmentsLoading}
                     >
-                      <option value="1">1x de {formatCurrency(totalAmount)}</option>
-                      <option value="2">2x - valor final calculado pelo Mercado Pago</option>
-                      <option value="3">3x - valor final calculado pelo Mercado Pago</option>
-                      <option value="4">4x - valor final calculado pelo Mercado Pago</option>
-                      <option value="6">6x - valor final calculado pelo Mercado Pago</option>
-                      <option value="12">12x - valor final calculado pelo Mercado Pago</option>
+                      {installmentOptions.map((option) => (
+                        <option key={option.installments} value={option.installments}>
+                          {option.message}
+                        </option>
+                      ))}
                     </select>
                     <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "#9ca3af" }}>
-                      Parcelas acima de 1x podem ter juros definidos pelo Mercado Pago antes da confirmacao.
+                      {installmentsLoading ? "Atualizando parcelas..." : installmentsNotice}
                     </p>
                   </div>
                 </div>
