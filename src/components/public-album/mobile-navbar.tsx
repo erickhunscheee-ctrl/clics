@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Home, Images, Heart, User } from "lucide-react";
+import { Home, Images, Heart, User, Download } from "lucide-react";
 import { useLoading } from "@/components/ui/loading-provider";
 
 function NavIcon({
@@ -121,17 +121,31 @@ export function MobileNavbar() {
   const albumsOpen = searchParams.get("albums") === "true";
   const favoritesOpen = searchParams.get("favorites") === "true";
   const profileOpen = searchParams.get("profile") === "true";
+  const purchasesOpen =
+    profileOpen && searchParams.get("profileTab") === "pedidos";
 
-  const openSheet = (key: "albums" | "favorites" | "profile") => {
+  const openSheet = (key: "albums" | "favorites" | "profile" | "purchases") => {
     startLoading(350);
-    const current = searchParams.get(key) === "true";
+    const current =
+      key === "purchases"
+        ? purchasesOpen
+        : searchParams.get(key) === "true" &&
+          searchParams.get("profileTab") !== "pedidos";
     const params = new URLSearchParams(window.location.search);
     // Close all sheets
     params.delete("albums");
     params.delete("favorites");
     params.delete("profile");
+    params.delete("profileTab");
     // Toggle clicked one
-    if (!current) params.set(key, "true");
+    if (!current) {
+      if (key === "purchases") {
+        params.set("profile", "true");
+        params.set("profileTab", "pedidos");
+      } else {
+        params.set(key, "true");
+      }
+    }
     const query = params.toString();
     window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
@@ -192,7 +206,20 @@ export function MobileNavbar() {
 
           {/* Perfil — bottom sheet */}
           <SheetButton
-            isOpen={profileOpen}
+            isOpen={purchasesOpen}
+            onToggle={() => openSheet("purchases")}
+            label="Compras"
+            ariaLabel="Abrir fotos compradas"
+          >
+            <Download
+              size={16}
+              strokeWidth={1.8}
+              style={{ color: purchasesOpen ? "#159BEF" : "#061337" }}
+            />
+          </SheetButton>
+
+          <SheetButton
+            isOpen={profileOpen && !purchasesOpen}
             onToggle={() => openSheet("profile")}
             label="Perfil"
             ariaLabel="Abrir perfil"
@@ -200,7 +227,9 @@ export function MobileNavbar() {
             <User
               size={16}
               strokeWidth={1.8}
-              style={{ color: profileOpen ? "#7B3FF2" : "#061337" }}
+              style={{
+                color: profileOpen && !purchasesOpen ? "#7B3FF2" : "#061337",
+              }}
             />
           </SheetButton>
         </div>

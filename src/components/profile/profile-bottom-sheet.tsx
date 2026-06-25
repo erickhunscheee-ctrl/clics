@@ -70,13 +70,14 @@ export function ProfileBottomSheet() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [animateOpen, setAnimateOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"perfil" | "pedidos">("perfil");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [notAuthenticated, setNotAuthenticated] = useState(false);
 
   const showProfile = searchParams.get("profile") === "true";
+  const activeTab =
+    searchParams.get("profileTab") === "pedidos" ? "pedidos" : "perfil";
 
   // Animate in/out
   useEffect(() => {
@@ -119,6 +120,19 @@ export function ProfileBottomSheet() {
   const handleClose = () => {
     const params = new URLSearchParams(window.location.search);
     params.delete("profile");
+    params.delete("profileTab");
+    const query = params.toString();
+    window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  };
+
+  const updateProfileTab = (tab: "perfil" | "pedidos") => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("profile", "true");
+    if (tab === "pedidos") {
+      params.set("profileTab", "pedidos");
+    } else {
+      params.delete("profileTab");
+    }
     const query = params.toString();
     window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
@@ -326,7 +340,7 @@ export function ProfileBottomSheet() {
                     }}
                   />
                   <button
-                    onClick={() => setActiveTab("perfil")}
+                    onClick={() => updateProfileTab("perfil")}
                     className={`flex-1 py-2 text-xs font-bold text-center z-10 transition-colors duration-200 flex items-center justify-center gap-1.5 ${
                       activeTab === "perfil"
                         ? "text-[#061337]"
@@ -337,7 +351,7 @@ export function ProfileBottomSheet() {
                     Conta
                   </button>
                   <button
-                    onClick={() => setActiveTab("pedidos")}
+                    onClick={() => updateProfileTab("pedidos")}
                     className={`flex-1 py-2 text-xs font-bold text-center z-10 transition-colors duration-200 flex items-center justify-center gap-1.5 ${
                       activeTab === "pedidos"
                         ? "text-[#061337]"
