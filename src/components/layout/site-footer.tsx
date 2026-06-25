@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Instagram } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -24,13 +25,26 @@ export function SiteFooter() {
             reservados.
           </span>
         </div>
-        <Link
-          href="/dashboard"
-          className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-[#159BEF]/30 hover:text-[#159BEF]"
-          style={{ color: "#9ca3af", borderColor: "#e5e7eb" }}
-        >
-          Área do Fotógrafo →
-        </Link>
+
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
+          <a
+            href="https://www.instagram.com/group.pixels/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[#159BEF]"
+          >
+            Desenvolvido por Pixels
+            <Instagram size={14} aria-hidden="true" />
+            <span>@group.pixels</span>
+          </a>
+          <Link
+            href="/dashboard"
+            className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-[#159BEF]/30 hover:text-[#159BEF]"
+            style={{ color: "#9ca3af", borderColor: "#e5e7eb" }}
+          >
+            Area do Fotografo &rarr;
+          </Link>
+        </div>
       </div>
     </footer>
   );

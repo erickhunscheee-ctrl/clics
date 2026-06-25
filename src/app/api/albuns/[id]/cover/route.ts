@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 
 interface Params {
@@ -10,7 +10,7 @@ interface Params {
 // POST /api/albuns/[id]/cover - Define uma foto do album como capa
 export async function POST(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const { id } = await params;
     const { photoId } = await request.json();
 

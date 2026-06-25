@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 import { albumSchema } from "@/lib/validators/album";
 import { slugify } from "@/lib/slug";
@@ -12,7 +12,7 @@ interface Params {
 // GET /api/albuns/[id] - Obter detalhes de um álbum
 export async function GET(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const { id } = await params;
 
     const album = await prisma.album.findUnique({
@@ -42,7 +42,7 @@ export async function GET(request: Request, { params }: Params) {
 // PUT /api/albuns/[id] - Atualizar um álbum
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const { id } = await params;
     const body = await request.json();
 
@@ -94,7 +94,7 @@ export async function PUT(request: Request, { params }: Params) {
 // DELETE /api/albuns/[id] - Excluir um álbum
 export async function DELETE(request: Request, { params }: Params) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const { id } = await params;
 
     const album = await prisma.album.findUnique({

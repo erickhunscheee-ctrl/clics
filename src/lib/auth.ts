@@ -43,11 +43,27 @@ export async function requireUser() {
   return user;
 }
 
+export function getAdminEmails() {
+  return [process.env.ADMIN_EMAIL, process.env.NEXT_PUBLIC_ADMIN_EMAIL]
+    .filter((email): email is string => Boolean(email))
+    .map((email) => email.trim().toLowerCase());
+}
+
+export function isAdminEmail(email?: string | null) {
+  if (!email) return false;
+
+  const adminEmails = getAdminEmails();
+
+  if (adminEmails.length === 0) return false;
+
+  return adminEmails.includes(email.trim().toLowerCase());
+}
+
 export async function requirePhotographer() {
   const user = await requireUser();
 
-  if (user.role !== "PHOTOGRAPHER" && user.role !== "ADMIN") {
-    throw new Error("Acesso restrito a fotógrafos");
+  if (!isAdminEmail(user.email)) {
+    throw new Error("Acesso restrito ao administrador");
   }
 
   return user;

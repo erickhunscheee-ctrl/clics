@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requirePhotographer } from "@/lib/auth";
 import { generateUniqueSlug } from "@/lib/slug";
 import { albumSchema } from "@/lib/validators/album";
 
 // GET /api/albuns - Listar álbuns do fotógrafo autenticado
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     const albums = await prisma.album.findMany({
       where: { photographerId: user.id },
       orderBy: { createdAt: "desc" },
@@ -30,17 +30,9 @@ export async function GET() {
 // POST /api/albuns - Criar novo álbum
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requirePhotographer();
     
     // Restringe a criação de álbuns ao administrador / email permitido
-    const allowedEmail = process.env.ADMIN_EMAIL;
-    if (user.role !== "ADMIN" && (!allowedEmail || user.email !== allowedEmail)) {
-      return NextResponse.json(
-        { message: "Apenas o administrador do sistema pode criar novos álbuns no momento." },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
 
     // Valida os dados de entrada usando Zod
