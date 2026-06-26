@@ -1,4 +1,6 @@
 import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 interface PreviewResult {
   buffer: Buffer;
@@ -8,13 +10,38 @@ interface PreviewResult {
   contentType: string;
 }
 
+async function createLogoWatermarkOverlay(width: number, height: number): Promise<Buffer> {
+  const logoPath = path.join(process.cwd(), "public", "logo_clics.png");
+  const logoBuffer = await readFile(logoPath);
+  const logoMetadata = await sharp(logoBuffer).metadata();
+  const logoAspectRatio = (logoMetadata.height ?? 1) / (logoMetadata.width ?? 1);
+  const logoWidth = Math.min(Math.max(160, Math.round(width * 0.34)), Math.round(width * 0.75));
+  const logoHeight = Math.round(logoWidth * logoAspectRatio);
+  const logoBase64 = logoBuffer.toString("base64");
+
+  return Buffer.from(`
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="transparent"/>
+      <image
+        href="data:image/png;base64,${logoBase64}"
+        width="${logoWidth}"
+        height="${logoHeight}"
+        x="${(width - logoWidth) / 2}"
+        y="${(height - logoHeight) / 2}"
+        opacity="0.32"
+        preserveAspectRatio="xMidYMid meet"
+      />
+    </svg>
+  `);
+}
+
 /**
  * Generate a compressed preview image from the original file buffer
  * - Max width: 1200px
  * - Format: WebP
  * - Quality: 75
  * - Preserves aspect ratio
- * - Watermark support prepared for future implementation
+ * - Optional CLICS logo watermark
  */
 export async function generatePhotoPreview(
   fileBuffer: Buffer,
@@ -26,33 +53,34 @@ export async function generatePhotoPreview(
 ): Promise<PreviewResult> {
   const maxWidth = options?.maxWidth ?? 1200;
   const quality = options?.quality ?? 75;
-  // Watermark flag prepared for future use
-  // const enableWatermark = options?.enableWatermark ?? false;
+  const enableWatermark = options?.enableWatermark ?? false;
 
-  let pipeline = sharp(fileBuffer)
+  const resizedImage = sharp(fileBuffer)
+    .rotate()
     .resize({
       width: maxWidth,
       withoutEnlargement: true,
       fit: "inside",
-    })
-    .webp({ quality });
+    });
 
-  // TODO: Future watermark implementation
-  // if (enableWatermark) {
-  //   const watermarkBuffer = await createWatermarkOverlay(width, height);
-  //   pipeline = pipeline.composite([{
-  //     input: watermarkBuffer,
-  //     gravity: 'center',
-  //   }]);
-  // }
+  const { data: resizedBuffer, info } = await resizedImage
+    .webp({ quality })
+    .toBuffer({ resolveWithObject: true });
 
-  const outputBuffer = await pipeline.toBuffer();
-  const metadata = await sharp(outputBuffer).metadata();
+  let outputBuffer = resizedBuffer;
+
+  if (enableWatermark && info.width > 0 && info.height > 0) {
+    const watermarkBuffer = await createLogoWatermarkOverlay(info.width, info.height);
+    outputBuffer = await sharp(resizedBuffer)
+      .composite([{ input: watermarkBuffer, gravity: "center" }])
+      .webp({ quality })
+      .toBuffer();
+  }
 
   return {
     buffer: outputBuffer,
-    width: metadata.width ?? 0,
-    height: metadata.height ?? 0,
+    width: info.width,
+    height: info.height,
     size: outputBuffer.length,
     contentType: "image/webp",
   };

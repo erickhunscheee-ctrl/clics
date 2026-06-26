@@ -54,6 +54,7 @@ export async function POST(request: Request, { params }: Params) {
     const previewResult = await generatePhotoPreview(originalBuffer, {
       maxWidth: 1200,
       quality: 80,
+      enableWatermark: true,
     });
 
     // 3. Envia o preview comprimido para o Cloudflare R2
@@ -90,10 +91,12 @@ export async function POST(request: Request, { params }: Params) {
     });
 
     return NextResponse.json(photo, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro no processamento da foto:", error);
+    const message = error instanceof Error ? error.message : "Erro no processamento da foto.";
+
     return NextResponse.json(
-      { message: error.message || "Erro no processamento da foto." },
+      { message },
       { status: 500 }
     );
   }
