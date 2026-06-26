@@ -11,11 +11,11 @@ interface PreviewResult {
 }
 
 async function createLogoWatermarkOverlay(width: number, height: number): Promise<Buffer> {
-  const logoPath = path.join(process.cwd(), "public", "logo_clics.png");
+  const logoPath = path.join(process.cwd(), "public", "logo_clics_branco.png");
   const logoBuffer = await readFile(logoPath);
   const logoMetadata = await sharp(logoBuffer).metadata();
   const logoAspectRatio = (logoMetadata.height ?? 1) / (logoMetadata.width ?? 1);
-  const logoWidth = Math.min(Math.max(160, Math.round(width * 0.34)), Math.round(width * 0.75));
+  const logoWidth = Math.round(width * 0.96);
   const logoHeight = Math.round(logoWidth * logoAspectRatio);
   const logoBase64 = logoBuffer.toString("base64");
 
@@ -28,7 +28,7 @@ async function createLogoWatermarkOverlay(width: number, height: number): Promis
         height="${logoHeight}"
         x="${(width - logoWidth) / 2}"
         y="${(height - logoHeight) / 2}"
-        opacity="0.32"
+        opacity="0.42"
         preserveAspectRatio="xMidYMid meet"
       />
     </svg>
