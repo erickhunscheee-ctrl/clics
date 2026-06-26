@@ -19,13 +19,26 @@ export async function GET(request: Request, { params }: Params) {
 
     const album = await prisma.album.findUnique({
       where: { id },
-      include: {
-        folders: {
-          orderBy: { createdAt: "asc" },
-          include: { _count: { select: { photos: true } } },
-        },
+      select: {
+        id: true,
+        photographerId: true,
+        title: true,
+        slug: true,
+        description: true,
+        eventDate: true,
+        location: true,
+        coverImageUrl: true,
+        defaultPhotoPrice: true,
+        status: true,
         photos: {
           orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            originalFileName: true,
+            previewUrl: true,
+            price: true,
+            status: true,
+          },
         },
       },
     });
@@ -36,7 +49,49 @@ export async function GET(request: Request, { params }: Params) {
 
     assertOwnership(user.id, album.photographerId);
 
-    return NextResponse.json(album);
+    const folders = await prisma.albumFolder
+      .findMany({
+        where: { albumId: id },
+        orderBy: { createdAt: "asc" },
+        include: { _count: { select: { photos: true } } },
+      })
+      .catch(() => []);
+    const promotion = await prisma
+      .$queryRaw<Array<{
+        promotionEnabled: boolean;
+        promotionMinPhotos: number;
+        promotionDiscountBps: number;
+      }>>`
+        SELECT
+          "promotionEnabled",
+          "promotionMinPhotos",
+          "promotionDiscountBps"
+        FROM "albums"
+        WHERE id = ${id}
+        LIMIT 1
+      `
+      .then((rows) => rows[0])
+      .catch(() => null);
+    const photoFolders = await prisma
+      .$queryRaw<Array<{ id: string; folderId: string | null }>>`
+        SELECT id, "folderId"
+        FROM "photos"
+        WHERE "albumId" = ${id}
+      `
+      .catch(() => []);
+    const folderByPhotoId = new Map(photoFolders.map((photo) => [photo.id, photo.folderId]));
+
+    return NextResponse.json({
+      ...album,
+      promotionEnabled: promotion?.promotionEnabled ?? false,
+      promotionMinPhotos: promotion?.promotionMinPhotos ?? 0,
+      promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
+      folders,
+      photos: album.photos.map((photo) => ({
+        ...photo,
+        folderId: folderByPhotoId.get(photo.id) ?? null,
+      })),
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erro ao buscar album.";
     return NextResponse.json(
@@ -55,6 +110,12 @@ export async function PUT(request: Request, { params }: Params) {
 
     const album = await prisma.album.findUnique({
       where: { id },
+      select: {
+        id: true,
+        photographerId: true,
+        title: true,
+        slug: true,
+      },
     });
 
     if (!album) {
@@ -71,19 +132,48 @@ export async function PUT(request: Request, { params }: Params) {
       slug = await slugify(validatedData.title);
     }
 
+    const updateData = {
+      title: validatedData.title,
+      slug,
+      description: validatedData.description,
+      eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
+      location: validatedData.location,
+      defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Reais para centavos
+    };
+
+    const albumSelect = {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      eventDate: true,
+      location: true,
+      coverImageUrl: true,
+      defaultPhotoPrice: true,
+      status: true,
+    } as const;
+
     const updatedAlbum = await prisma.album.update({
       where: { id },
       data: {
-        title: validatedData.title,
-        slug,
-        description: validatedData.description,
-        eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
-        location: validatedData.location,
-        defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Reais para centavos
+        ...updateData,
         promotionEnabled: validatedData.promotionEnabled,
         promotionMinPhotos: validatedData.promotionMinPhotos,
         promotionDiscountBps: percentToBps(validatedData.promotionDiscountPercent),
       },
+      select: albumSelect,
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "";
+
+      if (!message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
+        throw error;
+      }
+
+      return prisma.album.update({
+        where: { id },
+        data: updateData,
+        select: albumSelect,
+      });
     });
 
     return NextResponse.json(updatedAlbum);
@@ -110,6 +200,9 @@ export async function DELETE(request: Request, { params }: Params) {
 
     const album = await prisma.album.findUnique({
       where: { id },
+      select: {
+        photographerId: true,
+      },
     });
 
     if (!album) {

@@ -10,6 +10,7 @@ import { CartHeaderButton } from "@/components/cart/cart-header-button";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { HomeHeroSection } from "@/components/home/home-hero-section";
+import { HomePromotionsCarousel } from "@/components/home/home-promotions-carousel";
 import { ProfileTrigger } from "@/components/profile/profile-trigger";
 
 export const dynamic = "force-dynamic";
@@ -40,28 +41,52 @@ export default async function Home({ searchParams }: HomeProps) {
           ]
         : undefined,
     },
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      eventDate: true,
+      location: true,
+      coverImageUrl: true,
+      defaultPhotoPrice: true,
       photographer: { select: { name: true, avatarUrl: true } },
       _count: { select: { photos: true } },
     },
     orderBy: { eventDate: "desc" },
   });
-  const activePromotions = albums
-    .filter(
-      (album) =>
-        album.promotionEnabled &&
-        album.promotionMinPhotos > 0 &&
-        album.promotionDiscountBps > 0 &&
-        album._count.photos >= album.promotionMinPhotos
-    )
-    .map((album) => ({
-      id: album.id,
-      slug: album.slug,
-      title: album.title,
-      coverImageUrl: album.coverImageUrl,
-      promotionMinPhotos: album.promotionMinPhotos,
-      promotionDiscountBps: album.promotionDiscountBps,
-    }));
+  const activePromotions = await prisma
+    .$queryRaw<
+      Array<{
+        id: string;
+        slug: string;
+        title: string;
+        coverImageUrl: string | null;
+        promotionMinPhotos: number;
+        promotionDiscountBps: number;
+      }>
+    >`
+      SELECT
+        a.id,
+        a.slug,
+        a.title,
+        a."coverImageUrl",
+        a."promotionMinPhotos",
+        a."promotionDiscountBps"
+      FROM "albums" a
+      WHERE
+        a.status = 'PUBLISHED'
+        AND a."promotionEnabled" = true
+        AND a."promotionMinPhotos" > 0
+        AND a."promotionDiscountBps" > 0
+        AND (
+          SELECT COUNT(*)
+          FROM "photos" p
+          WHERE p."albumId" = a.id AND p.status = 'ACTIVE'
+        ) >= a."promotionMinPhotos"
+      ORDER BY a."eventDate" DESC NULLS LAST
+    `
+    .catch(() => []);
 
   const brandConcepts: Array<{ label: string; icon: typeof Sparkles }> = [];
   const visualStyles: Array<{ title: string; text: string; icon: typeof Sparkles }> = [];
@@ -180,8 +205,9 @@ export default async function Home({ searchParams }: HomeProps) {
       {/* ═══════════════════════════════════════════
           CONTEÚDO — Galeria de Álbuns
       ═══════════════════════════════════════════ */}
-      <main className="container mx-auto px-4 pt-28 md:pt-32 max-w-6xl space-y-12 pb-24 md:pb-10">
-        <HomeHeroSection sellerHref={sellerHref} promotions={activePromotions} />
+      <main className="container mx-auto px-4 pt-28 md:pt-32 max-w-6xl space-y-6 pb-24 md:pb-10">
+        <HomePromotionsCarousel promotions={activePromotions} />
+        <HomeHeroSection sellerHref={sellerHref} />
 
         <section className="hidden">
           <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">

@@ -1,21 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShoppingCart } from "lucide-react";
-import { HomePromotionsCarousel, type HomePromotion } from "@/components/home/home-promotions-carousel";
+import { ArrowRight, CreditCard, Download, Shield, ShoppingCart } from "lucide-react";
 
 interface HomeHeroSectionProps {
   sellerHref: string;
-  promotions: HomePromotion[];
 }
 
-export function HomeHeroSection({ sellerHref, promotions }: HomeHeroSectionProps) {
+export function HomeHeroSection({ sellerHref }: HomeHeroSectionProps) {
+  const highlights = [
+    { icon: CreditCard, text: "Pague em ate 12x no cartao" },
+    { icon: Download, text: "Download liberado apos pagamento" },
+    { icon: Shield, text: "Compra segura pelo Mercado Pago" },
+  ];
+
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white bg-white px-5 py-6 shadow-[0_24px_80px_rgba(6,19,55,0.08)] md:px-8 md:py-8">
       <div className="absolute left-1/2 top-0 h-1 w-14 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#159BEF] to-[#7B3FF2]" />
       <div className="absolute -left-24 top-16 h-56 w-56 rounded-full bg-[#159BEF]/10 blur-3xl" />
       <div className="absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-[#7B3FF2]/10 blur-3xl" />
 
-      <div className="relative grid gap-6 lg:grid-cols-[0.86fr_1.14fr] lg:items-stretch">
+      <div className="relative grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
         <div className="flex flex-col justify-center text-center lg:text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7B3FF2]">
             Marketplace de fotos
@@ -61,7 +65,24 @@ export function HomeHeroSection({ sellerHref, promotions }: HomeHeroSectionProps
           </div>
         </div>
 
-        <HomePromotionsCarousel promotions={promotions} />
+        <div className="grid gap-3">
+          {highlights.map(({ icon: Icon, text }) => (
+            <div
+              key={text}
+              className="flex items-center gap-4 rounded-3xl border border-slate-100 bg-[#F6F8FC] p-4 text-left shadow-sm"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#159BEF] shadow-sm">
+                <Icon size={21} />
+              </div>
+              <div>
+                <p className="text-sm font-black text-[#061337]">{text}</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Plataforma simples para escolher fotos e finalizar a compra sem depender do fotografo.
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

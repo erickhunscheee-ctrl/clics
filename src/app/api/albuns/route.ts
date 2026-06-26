@@ -13,7 +13,16 @@ export async function GET() {
     const albums = await prisma.album.findMany({
       where: { photographerId: user.id },
       orderBy: { createdAt: "desc" },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        eventDate: true,
+        location: true,
+        defaultPhotoPrice: true,
+        status: true,
+        createdAt: true,
         _count: {
           select: { photos: true },
         },
@@ -45,20 +54,48 @@ export async function POST(request: Request) {
     const slug = await generateUniqueSlug(validatedData.title);
 
     // Cria o álbum no banco de dados
+    const albumData = {
+      photographerId: user.id,
+      title: validatedData.title,
+      slug,
+      description: validatedData.description,
+      eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
+      location: validatedData.location,
+      defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Converte Reais para centavos
+      status: "DRAFT" as const,
+    };
+
+    const albumSelect = {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      eventDate: true,
+      location: true,
+      defaultPhotoPrice: true,
+      status: true,
+      createdAt: true,
+    };
+
     const album = await prisma.album.create({
       data: {
-        photographerId: user.id,
-        title: validatedData.title,
-        slug,
-        description: validatedData.description,
-        eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
-        location: validatedData.location,
-        defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Converte Reais para centavos
+        ...albumData,
         promotionEnabled: validatedData.promotionEnabled,
         promotionMinPhotos: validatedData.promotionMinPhotos,
         promotionDiscountBps: percentToBps(validatedData.promotionDiscountPercent),
-        status: "DRAFT",
       },
+      select: albumSelect,
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "";
+
+      if (!message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
+        throw error;
+      }
+
+      return prisma.album.create({
+        data: albumData,
+        select: albumSelect,
+      });
     });
 
     return NextResponse.json(album, { status: 201 });
