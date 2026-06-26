@@ -92,7 +92,16 @@ export default async function Home({ searchParams }: HomeProps) {
   const visualStyles: Array<{ title: string; text: string; icon: typeof Sparkles }> = [];
 
   return (
-    <div className="min-h-screen" style={{ background: "#F6F8FC", color: "#061337", fontFamily: "var(--font-inter, Inter, sans-serif)" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "#F6F8FC",
+        color: "#061337",
+        fontFamily: "var(--font-inter, Inter, sans-serif)",
+        width: "125%",
+        zoom: 0.8,
+      }}
+    >
 
       {/* ═══════════════════════════════════════════
           HEADER — Desktop & Mobile
