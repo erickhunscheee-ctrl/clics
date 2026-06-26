@@ -63,10 +63,13 @@ export async function GET(
       location: album.location,
       coverImageUrl: album.coverImageUrl,
       defaultPhotoPrice: album.defaultPhotoPrice,
+      promotionEnabled: album.promotionEnabled,
+      promotionMinPhotos: album.promotionMinPhotos,
+      promotionDiscountBps: album.promotionDiscountBps,
       photographer: album.photographer,
       photos: album.photos,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao buscar álbum público:", error);
     return NextResponse.json(
       { message: "Erro interno do servidor ao carregar o álbum." },

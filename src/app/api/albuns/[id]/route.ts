@@ -4,6 +4,8 @@ import { requirePhotographer } from "@/lib/auth";
 import { assertOwnership } from "@/lib/permissions";
 import { albumSchema } from "@/lib/validators/album";
 import { slugify } from "@/lib/slug";
+import { percentToBps } from "@/lib/promotions";
+import { ZodError } from "zod";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -31,10 +33,11 @@ export async function GET(request: Request, { params }: Params) {
     assertOwnership(user.id, album.photographerId);
 
     return NextResponse.json(album);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Erro ao buscar album.";
     return NextResponse.json(
-      { message: error.message || "Erro ao buscar álbum." },
-      { status: error.message === "Não autenticado" ? 401 : 403 }
+      { message },
+      { status: message === "Não autenticado" ? 401 : 403 }
     );
   }
 }
@@ -73,20 +76,24 @@ export async function PUT(request: Request, { params }: Params) {
         eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
         location: validatedData.location,
         defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Reais para centavos
+        promotionEnabled: validatedData.promotionEnabled,
+        promotionMinPhotos: validatedData.promotionMinPhotos,
+        promotionDiscountBps: percentToBps(validatedData.promotionDiscountPercent),
       },
     });
 
     return NextResponse.json(updatedAlbum);
-  } catch (error: any) {
-    if (error.name === "ZodError") {
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { message: "Dados inválidos.", errors: error.errors },
+        { message: "Dados inválidos.", errors: error.issues },
         { status: 400 }
       );
     }
+    const message = error instanceof Error ? error.message : "Erro ao atualizar album.";
     return NextResponse.json(
-      { message: error.message || "Erro ao atualizar álbum." },
-      { status: error.message === "Não autenticado" ? 401 : 403 }
+      { message },
+      { status: message === "Não autenticado" ? 401 : 403 }
     );
   }
 }
@@ -114,10 +121,11 @@ export async function DELETE(request: Request, { params }: Params) {
     });
 
     return NextResponse.json({ message: "Álbum excluído com sucesso." });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Erro ao excluir album.";
     return NextResponse.json(
-      { message: error.message || "Erro ao excluir álbum." },
-      { status: error.message === "Não autenticado" ? 401 : 403 }
+      { message },
+      { status: message === "Não autenticado" ? 401 : 403 }
     );
   }
 }

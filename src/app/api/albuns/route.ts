@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePhotographer } from "@/lib/auth";
 import { generateUniqueSlug } from "@/lib/slug";
 import { albumSchema } from "@/lib/validators/album";
+import { percentToBps } from "@/lib/promotions";
+import { ZodError } from "zod";
 
 // GET /api/albuns - Listar álbuns do fotógrafo autenticado
 export async function GET() {
@@ -19,10 +21,11 @@ export async function GET() {
     });
 
     return NextResponse.json(albums);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Erro ao carregar albuns.";
     return NextResponse.json(
-      { message: error.message || "Erro ao carregar álbuns." },
-      { status: error.message === "Não autenticado" ? 401 : 500 }
+      { message },
+      { status: message === "Não autenticado" ? 401 : 500 }
     );
   }
 }
@@ -51,21 +54,25 @@ export async function POST(request: Request) {
         eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
         location: validatedData.location,
         defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Converte Reais para centavos
+        promotionEnabled: validatedData.promotionEnabled,
+        promotionMinPhotos: validatedData.promotionMinPhotos,
+        promotionDiscountBps: percentToBps(validatedData.promotionDiscountPercent),
         status: "DRAFT",
       },
     });
 
     return NextResponse.json(album, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "ZodError") {
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { message: "Dados inválidos.", errors: error.errors },
+        { message: "Dados inválidos.", errors: error.issues },
         { status: 400 }
       );
     }
+    const message = error instanceof Error ? error.message : "Erro ao criar album.";
     return NextResponse.json(
-      { message: error.message || "Erro ao criar álbum." },
-      { status: error.message === "Não autenticado" ? 401 : 500 }
+      { message },
+      { status: message === "Não autenticado" ? 401 : 500 }
     );
   }
 }

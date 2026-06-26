@@ -6,7 +6,7 @@ import { useCart } from "@/components/cart/cart-provider";
 import { formatCurrency } from "@/lib/money";
 
 export function BuyerCartPanel() {
-  const { items, albumSlug, removeFromCart, clearCart, totalAmount } = useCart();
+  const { items, albumSlug, removeFromCart, clearCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const checkoutHref = albumSlug ? `/checkout?album=${albumSlug}` : "/checkout";
   const galleryHref = albumSlug ? `/album/${albumSlug}` : "/";
 
@@ -69,6 +69,18 @@ export function BuyerCartPanel() {
           </div>
 
           <div className="rounded-2xl bg-slate-950 p-5 text-white">
+            {promotionApplied && (
+              <div className="mb-3 space-y-1 border-b border-white/10 pb-3 text-sm">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotalAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-emerald-300">
+                  <span>Desconto promocional</span>
+                  <span>- {formatCurrency(discountAmount)}</span>
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Total</span>
               <span className="text-xl font-black">{formatCurrency(totalAmount)}</span>

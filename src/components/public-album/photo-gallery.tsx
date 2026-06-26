@@ -24,6 +24,9 @@ interface Album {
   location: string | null;
   coverImageUrl: string | null;
   defaultPhotoPrice: number;
+  promotionEnabled: boolean;
+  promotionMinPhotos: number;
+  promotionDiscountBps: number;
   photographer: {
     name: string;
     avatarUrl: string | null;
@@ -36,8 +39,14 @@ interface PhotoGalleryProps {
 }
 
 export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
-  const { items, addToCart, removeFromCart, isInCart, totalAmount } = useCart();
+  const { items, addToCart, removeFromCart, isInCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const promotion = {
+    promotionEnabled: album.promotionEnabled,
+    promotionMinPhotos: album.promotionMinPhotos,
+    promotionDiscountBps: album.promotionDiscountBps,
+  };
+  const promotionPercent = album.promotionDiscountBps / 100;
   
   // Modal de visualização ampliada
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
@@ -53,7 +62,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
         originalFileName: photo.originalFileName,
         previewUrl: photo.previewUrl,
         price: photo.price,
-      }, album.slug);
+      }, album.slug, promotion);
     }
   };
 
@@ -108,6 +117,11 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
               <p className="text-slate-500 text-sm max-w-2xl leading-relaxed">{album.description}</p>
             )}
             <div className="flex flex-wrap items-center gap-3 pt-1">
+              {album.promotionEnabled && album.promotionMinPhotos > 0 && album.promotionDiscountBps > 0 && (
+                <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-bold text-emerald-700 shadow-sm">
+                  Promo: {promotionPercent.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% OFF a partir de {album.promotionMinPhotos} fotos
+                </div>
+              )}
               {album.eventDate && (
                 <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#061337]/80 shadow-sm">
                   <Calendar size={13} className="text-[#159BEF]" />
@@ -249,9 +263,14 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
               {items.length} {items.length === 1 ? "foto selecionada" : "fotos selecionadas"}
             </p>
             <p className="truncate text-sm font-black text-[#061337] md:text-base">
-              <span className="hidden sm:inline">Subtotal: </span>
+              <span className="hidden sm:inline">{promotionApplied ? "Total com promo: " : "Subtotal: "}</span>
               <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">{formatCurrency(totalAmount)}</span>
             </p>
+            {promotionApplied && (
+              <p className="text-[11px] font-semibold text-emerald-600">
+                {formatCurrency(discountAmount)} de desconto sobre {formatCurrency(subtotalAmount)}
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button

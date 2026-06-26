@@ -4,6 +4,7 @@ import { checkoutSchema } from "@/lib/validators/checkout";
 import { processTransparentPayment, mapPaymentStatus } from "@/lib/mercadopago";
 import { generateAccessToken } from "@/lib/tokens";
 import { requireUser } from "@/lib/auth";
+import { calculatePromotionTotal } from "@/lib/promotions";
 
 export async function POST(request: Request) {
   try {
@@ -79,8 +80,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Calcula o valor total em centavos
-    const totalAmount = photos.reduce((sum, photo) => sum + photo.price, 0);
+    // Calcula o total em centavos com a promocao vigente do album.
+    const { totalAmount } = calculatePromotionTotal(
+      photos.map((photo) => photo.price),
+      album
+    );
 
     // Gera um token de acesso para o pedido com validade de 30 dias
     const accessToken = generateAccessToken();

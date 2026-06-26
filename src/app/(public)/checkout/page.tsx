@@ -161,7 +161,7 @@ function CheckoutFallback() {
 }
 
 function CheckoutContent() {
-  const { items, albumId, albumSlug, totalAmount, clearCart } = useCart();
+  const { items, albumId, albumSlug, subtotalAmount, discountAmount, totalAmount, promotionApplied, clearCart } = useCart();
   const searchParams = useSearchParams();
   const router = useRouter();
   const returnAlbumSlug = albumSlug || searchParams.get("album");
@@ -748,6 +748,18 @@ function CheckoutContent() {
                 <span style={{ color: "#6b7280" }}>Fotos selecionadas</span>
                 <span className="font-semibold" style={{ color: "#061337" }}>{items.length}</span>
               </div>
+              {promotionApplied && (
+                <>
+                  <div className="flex justify-between items-center text-sm">
+                    <span style={{ color: "#6b7280" }}>Subtotal</span>
+                    <span className="font-semibold" style={{ color: "#061337" }}>{formatCurrency(subtotalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span style={{ color: "#16a34a" }}>Desconto promocional</span>
+                    <span className="font-semibold" style={{ color: "#16a34a" }}>- {formatCurrency(discountAmount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-center">
                 <span className="font-bold text-base" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
                   Total a pagar

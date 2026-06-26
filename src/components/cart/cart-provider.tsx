@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { calculatePromotionTotal, type PromotionConfig } from "@/lib/promotions";
 
 export interface CartItem {
   id: string;
@@ -13,11 +14,15 @@ interface CartContextType {
   items: CartItem[];
   albumId: string | null;
   albumSlug: string | null;
-  addToCart: (albumId: string, item: CartItem, albumSlug?: string) => void;
+  albumPromotion: PromotionConfig | null;
+  addToCart: (albumId: string, item: CartItem, albumSlug?: string, promotion?: PromotionConfig | null) => void;
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
   isInCart: (itemId: string) => boolean;
+  subtotalAmount: number;
+  discountAmount: number;
   totalAmount: number;
+  promotionApplied: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -26,6 +31,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [albumId, setAlbumId] = useState<string | null>(null);
   const [albumSlug, setAlbumSlug] = useState<string | null>(null);
+  const [albumPromotion, setAlbumPromotion] = useState<PromotionConfig | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Carrega o carrinho do localStorage ao iniciar
@@ -38,6 +44,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (parsed.albumId && Array.isArray(parsed.items)) {
             setAlbumId(parsed.albumId);
             setAlbumSlug(parsed.albumSlug ?? null);
+            setAlbumPromotion(parsed.albumPromotion ?? null);
             setItems(parsed.items);
           }
         }
@@ -56,14 +63,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(
         "antigravity_fotos_cart",
-        JSON.stringify({ albumId, albumSlug, items })
+        JSON.stringify({ albumId, albumSlug, albumPromotion, items })
       );
     } catch (e) {
       console.error("Erro ao salvar carrinho no localStorage:", e);
     }
-  }, [items, albumId, albumSlug, isLoaded]);
+  }, [items, albumId, albumSlug, albumPromotion, isLoaded]);
 
-  const addToCart = (newAlbumId: string, item: CartItem, newAlbumSlug?: string) => {
+  const addToCart = (
+    newAlbumId: string,
+    item: CartItem,
+    newAlbumSlug?: string,
+    promotion?: PromotionConfig | null
+  ) => {
     // Se o usuário mudar de álbum, limpa o carrinho antigo para evitar compras multi-álbum no mesmo pedido
     if (albumId && albumId !== newAlbumId) {
       if (
@@ -73,6 +85,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ) {
         setAlbumId(newAlbumId);
         setAlbumSlug(newAlbumSlug ?? null);
+        setAlbumPromotion(promotion ?? null);
         setItems([item]);
       }
       return;
@@ -81,6 +94,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!albumId) {
       setAlbumId(newAlbumId);
     }
+    setAlbumPromotion(promotion ?? null);
     if (newAlbumSlug && albumSlug !== newAlbumSlug) {
       setAlbumSlug(newAlbumSlug);
     }
@@ -97,6 +111,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (updated.length === 0) {
         setAlbumId(null);
         setAlbumSlug(null);
+        setAlbumPromotion(null);
       }
       return updated;
     });
@@ -106,13 +121,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
     setAlbumId(null);
     setAlbumSlug(null);
+    setAlbumPromotion(null);
   };
 
   const isInCart = (itemId: string) => {
     return items.some((item) => item.id === itemId);
   };
 
-  const totalAmount = items.reduce((acc, item) => acc + item.price, 0);
+  const {
+    subtotalAmount,
+    discountAmount,
+    totalAmount,
+    applied: promotionApplied,
+  } = calculatePromotionTotal(
+    items.map((item) => item.price),
+    albumPromotion
+  );
 
   return (
     <CartContext.Provider
@@ -120,11 +144,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         items,
         albumId,
         albumSlug,
+        albumPromotion,
         addToCart,
         removeFromCart,
         clearCart,
         isInCart,
+        subtotalAmount,
+        discountAmount,
         totalAmount,
+        promotionApplied,
       }}
     >
       {children}

@@ -12,7 +12,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { items, albumSlug, removeFromCart, clearCart, totalAmount } = useCart();
+  const { items, albumSlug, removeFromCart, clearCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const checkoutHref = albumSlug ? `/checkout?album=${albumSlug}` : "/checkout";
 
   if (!isOpen || typeof document === "undefined") return null;
@@ -121,8 +121,22 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {/* Footer */}
             {items.length > 0 && (
               <div className="border-t border-slate-200/60 px-6 py-6 bg-white space-y-4">
+                <div className="space-y-2 text-sm text-[#061337]">
+                  {promotionApplied && (
+                    <>
+                      <div className="flex justify-between">
+                        <p className="text-slate-500">Subtotal</p>
+                        <p className="font-bold">{formatCurrency(subtotalAmount)}</p>
+                      </div>
+                      <div className="flex justify-between text-emerald-600">
+                        <p>Desconto promocional</p>
+                        <p className="font-bold">- {formatCurrency(discountAmount)}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
                 <div className="flex justify-between text-base font-semibold text-[#061337]">
-                  <p>Subtotal</p>
+                  <p>Total</p>
                   <p className="text-xl font-black text-[#7B3FF2]">
                     {formatCurrency(totalAmount)}
                   </p>

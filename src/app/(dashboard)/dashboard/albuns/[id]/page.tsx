@@ -3,8 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Eye, EyeOff, Trash2, Globe, FileImage, Sparkles } from "lucide-react";
-import { formatCurrency } from "@/lib/money";
+import { ArrowLeft, Save, Trash2, Globe, Sparkles } from "lucide-react";
 
 interface Photo {
   id: string;
@@ -22,6 +21,9 @@ interface Album {
   eventDate: string | null;
   location: string | null;
   defaultPhotoPrice: number;
+  promotionEnabled: boolean;
+  promotionMinPhotos: number;
+  promotionDiscountBps: number;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   photos: Photo[];
 }
@@ -39,6 +41,9 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
   const [eventDate, setEventDate] = useState("");
   const [location, setLocation] = useState("");
   const [defaultPhotoPrice, setDefaultPhotoPrice] = useState("0");
+  const [promotionEnabled, setPromotionEnabled] = useState(false);
+  const [promotionMinPhotos, setPromotionMinPhotos] = useState("0");
+  const [promotionDiscountPercent, setPromotionDiscountPercent] = useState("0");
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -58,8 +63,11 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
         setEventDate(data.eventDate ? new Date(data.eventDate).toISOString().split("T")[0] : "");
         setLocation(data.location || "");
         setDefaultPhotoPrice((data.defaultPhotoPrice / 100).toFixed(2));
-      } catch (err: any) {
-        setError(err.message || "Erro ao carregar álbum.");
+        setPromotionEnabled(Boolean(data.promotionEnabled));
+        setPromotionMinPhotos(String(data.promotionMinPhotos ?? 0));
+        setPromotionDiscountPercent(((data.promotionDiscountBps ?? 0) / 100).toFixed(2));
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar album.");
       } finally {
         setLoading(false);
       }
@@ -83,6 +91,9 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
           eventDate: eventDate || null,
           location: location || null,
           defaultPhotoPrice: parseFloat(defaultPhotoPrice) || 0,
+          promotionEnabled,
+          promotionMinPhotos: parseInt(promotionMinPhotos) || 0,
+          promotionDiscountPercent: parseFloat(promotionDiscountPercent) || 0,
         }),
       });
 
@@ -93,8 +104,8 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
 
       setSuccess(true);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Erro ao salvar alterações.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar alteracoes.");
     } finally {
       setUpdating(false);
     }
@@ -116,8 +127,8 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
 
       setAlbum(data);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Falha ao mudar status.");
     }
   };
 
@@ -133,8 +144,8 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
 
       router.push("/dashboard/albuns");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Erro ao deletar álbum.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao deletar album.");
     }
   };
 
@@ -305,6 +316,59 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
                   />
                 </div>
+              </div>
+              <div className="rounded-2xl border border-emerald-900/40 bg-emerald-950/10 p-5 space-y-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={promotionEnabled}
+                    onChange={(e) => setPromotionEnabled(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-emerald-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-white">Ativar promocao por quantidade</span>
+                    <span className="mt-1 block text-xs text-zinc-400">
+                      Aplica um desconto percentual no total quando o cliente atingir a quantidade minima de fotos.
+                    </span>
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-zinc-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                      Minimo de fotos
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={promotionMinPhotos}
+                      onChange={(e) => setPromotionMinPhotos(e.target.value)}
+                      disabled={!promotionEnabled}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-zinc-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                      Desconto (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="99.99"
+                      step="0.01"
+                      value={promotionDiscountPercent}
+                      onChange={(e) => setPromotionDiscountPercent(e.target.value)}
+                      disabled={!promotionEnabled}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-500">
+                  Exemplo: compre 2 e pague 1 = minimo 2 fotos e 50% de desconto.
+                </p>
               </div>
             </div>
 
