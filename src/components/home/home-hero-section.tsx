@@ -1,13 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, CreditCard, Download, Shield, ShoppingCart } from "lucide-react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
+import { HomeHighlightsCarousel } from "@/components/home/home-highlights-carousel";
 
 export function HomeHeroSection() {
   const contactHref = "https://wa.me/55519991261";
-  const highlights = [
-    { icon: CreditCard, text: "Pague em ate 12x no cartao" },
-    { icon: Download, text: "Download liberado apos pagamento" },
-    { icon: Shield, text: "Compra segura pelo Mercado Pago" },
-  ];
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white bg-white px-5 py-6 shadow-[0_24px_80px_rgba(6,19,55,0.08)] md:px-8 md:py-8">
@@ -55,24 +51,7 @@ export function HomeHeroSection() {
           </div>
         </div>
 
-        <div className="grid gap-3">
-          {highlights.map(({ icon: Icon, text }) => (
-            <div
-              key={text}
-              className="flex items-center gap-4 rounded-3xl border border-slate-100 bg-[#F6F8FC] p-4 text-left shadow-sm"
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#159BEF] shadow-sm">
-                <Icon size={21} />
-              </div>
-              <div>
-                <p className="text-sm font-black text-[#061337]">{text}</p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Plataforma simples para escolher fotos e finalizar a compra sem depender do fotografo.
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <HomeHighlightsCarousel />
       </div>
     </section>
   );
