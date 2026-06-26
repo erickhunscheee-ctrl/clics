@@ -67,6 +67,21 @@ type InstallmentsResult = {
   notice: string;
 };
 
+const MERCADO_PAGO_PUBLIC_INSTALLMENT_FEES: Record<number, number> = {
+  1: 4.98,
+  2: 9.64,
+  3: 11.23,
+  4: 11.36,
+  5: 14.31,
+  6: 14.32,
+  7: 16.72,
+  8: 16.73,
+  9: 19.69,
+  10: 20.65,
+  11: 20.66,
+  12: 22.11,
+};
+
 function toCentavosFromReais(value: number) {
   return Math.round(value * 100);
 }
@@ -74,14 +89,17 @@ function toCentavosFromReais(value: number) {
 function buildFallbackInstallments(totalAmount: number): InstallmentOption[] {
   return Array.from({ length: 12 }, (_, index) => {
     const installments = index + 1;
-    const installmentAmount = Math.ceil(totalAmount / installments);
+    const feePercent = MERCADO_PAGO_PUBLIC_INSTALLMENT_FEES[installments] ?? 0;
+    const totalWithInterest = Math.round(totalAmount * (1 + feePercent / 100));
+    const installmentAmount = Math.ceil(totalWithInterest / installments);
+    const message = `${installments}x de ${formatCurrency(installmentAmount)} - total ${formatCurrency(totalWithInterest)}`;
 
     return {
       installments,
       installmentAmount,
-      totalAmount,
-      message: `${installments}x de ${formatCurrency(installmentAmount)} sem juros`,
-      hasInterest: false,
+      totalAmount: totalWithInterest,
+      message,
+      hasInterest: feePercent > 0,
     };
   });
 }
@@ -187,7 +205,7 @@ function CheckoutContent() {
     : fallbackInstallmentOptions;
   const installmentsNotice =
     cardBin.length < 6
-      ? "Digite os 6 primeiros numeros do cartao para ver os juros reais do Mercado Pago."
+      ? "Previa calculada com a tabela publica de juros do Mercado Pago. Digite os 6 primeiros numeros do cartao para validar."
       : installmentsLoading
         ? "Atualizando parcelas..."
         : installmentsResult?.bin === cardBin
@@ -272,7 +290,7 @@ function CheckoutContent() {
         setInstallmentsResult({
           bin: cardBin,
           options: buildFallbackInstallments(totalAmount),
-          notice: "Nao foi possivel consultar os juros agora. O Mercado Pago validara o valor final ao processar.",
+          notice: "Previa calculada com a tabela publica de juros. O Mercado Pago validara o valor final ao processar.",
         });
       } finally {
         if (shouldUpdate) setInstallmentsLoading(false);
