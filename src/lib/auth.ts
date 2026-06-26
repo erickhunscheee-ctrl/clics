@@ -2,42 +2,56 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Get the current authenticated user from Supabase and find their Prisma User record
- * Returns null if not authenticated
+ * Returns the authenticated user synced with Prisma, or null when there is no
+ * session. Public pages should not crash because of stale cookies or auth sync
+ * failures.
  */
 export async function getCurrentUser() {
   const supabase = await createClient();
-  const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+
+  const {
+    data: { user: supabaseUser },
+  } = await supabase.auth.getUser().catch((error) => {
+    console.error("Erro ao buscar usuario Supabase:", error);
+    return { data: { user: null } };
+  });
 
   if (!supabaseUser) return null;
 
-  // Busca ou cria o usuário na base de dados para manter sincronizado resiliente a falhas
-  const user = await prisma.user.upsert({
-    where: { supabaseUserId: supabaseUser.id },
-    update: {
-      name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
-      avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
-    },
-    create: {
-      supabaseUserId: supabaseUser.id,
-      name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
-      email: supabaseUser.email!,
-      avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
-      role: "BUYER",
-    },
-  });
+  const name =
+    supabaseUser.user_metadata?.full_name ||
+    supabaseUser.user_metadata?.name ||
+    supabaseUser.email?.split("@")[0] ||
+    "Fotografo";
+
+  const user = await prisma.user
+    .upsert({
+      where: { supabaseUserId: supabaseUser.id },
+      update: {
+        name,
+        avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+      },
+      create: {
+        supabaseUserId: supabaseUser.id,
+        name,
+        email: supabaseUser.email!,
+        avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+        role: "BUYER",
+      },
+    })
+    .catch((error) => {
+      console.error("Erro ao sincronizar usuario autenticado:", error);
+      return null;
+    });
 
   return user;
 }
 
-/**
- * Require authenticated user — throws if not logged in
- */
 export async function requireUser() {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new Error("Não autenticado");
+    throw new Error("Nao autenticado");
   }
 
   return user;

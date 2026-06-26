@@ -29,32 +29,37 @@ export default async function Home({ searchParams }: HomeProps) {
   const userHomeLabel = canAccessDashboard ? "Painel fotografo" : "Minha area";
   const sellerHref = canAccessDashboard ? "/dashboard" : "/cadastro";
 
-  const albums = await prisma.album.findMany({
-    where: {
-      status: "PUBLISHED",
-      OR: query
-        ? [
-            { title: { contains: query, mode: "insensitive" } },
-            { description: { contains: query, mode: "insensitive" } },
-            { location: { contains: query, mode: "insensitive" } },
-            { photographer: { name: { contains: query, mode: "insensitive" } } },
-          ]
-        : undefined,
-    },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      description: true,
-      eventDate: true,
-      location: true,
-      coverImageUrl: true,
-      defaultPhotoPrice: true,
-      photographer: { select: { name: true, avatarUrl: true } },
-      _count: { select: { photos: true } },
-    },
-    orderBy: { eventDate: "desc" },
-  });
+  const albums = await prisma.album
+    .findMany({
+      where: {
+        status: "PUBLISHED",
+        OR: query
+          ? [
+              { title: { contains: query, mode: "insensitive" } },
+              { description: { contains: query, mode: "insensitive" } },
+              { location: { contains: query, mode: "insensitive" } },
+              { photographer: { name: { contains: query, mode: "insensitive" } } },
+            ]
+          : undefined,
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        eventDate: true,
+        location: true,
+        coverImageUrl: true,
+        defaultPhotoPrice: true,
+        photographer: { select: { name: true, avatarUrl: true } },
+        _count: { select: { photos: true } },
+      },
+      orderBy: { eventDate: "desc" },
+    })
+    .catch((error) => {
+      console.error("Erro ao carregar albuns da home:", error);
+      return [];
+    });
   const activePromotions = await prisma
     .$queryRaw<
       Array<{
