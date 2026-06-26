@@ -9,6 +9,7 @@ export const albumSchema = z.object({
   eventDate: z.string().optional().nullable(),
   location: z.string().max(200, "O local nao pode passar de 200 caracteres").optional().nullable(),
   defaultPhotoPrice: z.number().min(0, "O preco padrao nao pode ser negativo").default(0),
+  isFeatured: z.boolean().default(false),
   promotionEnabled: z.boolean().default(false),
   promotionMinPhotos: z.number().int().min(0, "A quantidade minima nao pode ser negativa").default(0),
   promotionDiscountPercent: z

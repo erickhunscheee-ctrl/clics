@@ -58,11 +58,13 @@ export async function GET(request: Request, { params }: Params) {
       .catch(() => []);
     const promotion = await prisma
       .$queryRaw<Array<{
+        isFeatured: boolean;
         promotionEnabled: boolean;
         promotionMinPhotos: number;
         promotionDiscountBps: number;
       }>>`
         SELECT
+          "isFeatured",
           "promotionEnabled",
           "promotionMinPhotos",
           "promotionDiscountBps"
@@ -83,6 +85,7 @@ export async function GET(request: Request, { params }: Params) {
 
     return NextResponse.json({
       ...album,
+      isFeatured: promotion?.isFeatured ?? false,
       promotionEnabled: promotion?.promotionEnabled ?? false,
       promotionMinPhotos: promotion?.promotionMinPhotos ?? 0,
       promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
@@ -139,6 +142,7 @@ export async function PUT(request: Request, { params }: Params) {
       eventDate: validatedData.eventDate ? new Date(validatedData.eventDate) : null,
       location: validatedData.location,
       defaultPhotoPrice: Math.round(validatedData.defaultPhotoPrice * 100), // Reais para centavos
+      isFeatured: validatedData.isFeatured,
     };
 
     const albumSelect = {
@@ -153,6 +157,15 @@ export async function PUT(request: Request, { params }: Params) {
       status: true,
     } as const;
 
+    if (validatedData.isFeatured) {
+      await prisma.album
+        .updateMany({
+          where: { id: { not: id } },
+          data: { isFeatured: false },
+        })
+        .catch(() => undefined);
+    }
+
     const updatedAlbum = await prisma.album.update({
       where: { id },
       data: {
@@ -165,13 +178,22 @@ export async function PUT(request: Request, { params }: Params) {
     }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : "";
 
-      if (!message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
+      if (!message.includes("isFeatured") && !message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
         throw error;
       }
 
+      const fallbackUpdateData = {
+        title: updateData.title,
+        slug: updateData.slug,
+        description: updateData.description,
+        eventDate: updateData.eventDate,
+        location: updateData.location,
+        defaultPhotoPrice: updateData.defaultPhotoPrice,
+      };
+
       return prisma.album.update({
         where: { id },
-        data: updateData,
+        data: fallbackUpdateData,
         select: albumSelect,
       });
     });

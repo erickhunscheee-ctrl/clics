@@ -3,7 +3,7 @@ import { ArrowRight, ShoppingCart } from "lucide-react";
 import { HomeHighlightsCarousel } from "@/components/home/home-highlights-carousel";
 
 export function HomeHeroSection() {
-  const contactHref = "https://wa.me/55519991261";
+  const contactHref = "https://wa.me/5551999129161";
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white bg-white px-5 py-6 shadow-[0_24px_80px_rgba(6,19,55,0.08)] md:px-8 md:py-8">

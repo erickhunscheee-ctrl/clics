@@ -21,6 +21,7 @@ interface Album {
   eventDate: string | null;
   location: string | null;
   defaultPhotoPrice: number;
+  isFeatured: boolean;
   promotionEnabled: boolean;
   promotionMinPhotos: number;
   promotionDiscountBps: number;
@@ -41,6 +42,7 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
   const [eventDate, setEventDate] = useState("");
   const [location, setLocation] = useState("");
   const [defaultPhotoPrice, setDefaultPhotoPrice] = useState("0");
+  const [isFeatured, setIsFeatured] = useState(false);
   const [promotionEnabled, setPromotionEnabled] = useState(false);
   const [promotionMinPhotos, setPromotionMinPhotos] = useState("0");
   const [promotionDiscountPercent, setPromotionDiscountPercent] = useState("0");
@@ -63,6 +65,7 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
         setEventDate(data.eventDate ? new Date(data.eventDate).toISOString().split("T")[0] : "");
         setLocation(data.location || "");
         setDefaultPhotoPrice((data.defaultPhotoPrice / 100).toFixed(2));
+        setIsFeatured(Boolean(data.isFeatured));
         setPromotionEnabled(Boolean(data.promotionEnabled));
         setPromotionMinPhotos(String(data.promotionMinPhotos ?? 0));
         setPromotionDiscountPercent(((data.promotionDiscountBps ?? 0) / 100).toFixed(2));
@@ -91,6 +94,7 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
           eventDate: eventDate || null,
           location: location || null,
           defaultPhotoPrice: parseFloat(defaultPhotoPrice) || 0,
+          isFeatured,
           promotionEnabled,
           promotionMinPhotos: parseInt(promotionMinPhotos) || 0,
           promotionDiscountPercent: parseFloat(promotionDiscountPercent) || 0,
@@ -317,6 +321,23 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
                   />
                 </div>
               </div>
+              <div className="rounded-2xl border border-sky-900/40 bg-sky-950/10 p-5">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-sky-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-white">Album em destaque na home</span>
+                    <span className="mt-1 block text-xs text-zinc-400">
+                      Quando ativado, este album aparece como o destaque principal. Os outros albuns saem para o carrossel.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               <div className="rounded-2xl border border-emerald-900/40 bg-emerald-950/10 p-5 space-y-4">
                 <label className="flex items-start gap-3">
                   <input

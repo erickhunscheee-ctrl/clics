@@ -80,6 +80,7 @@ export async function POST(request: Request) {
     const album = await prisma.album.create({
       data: {
         ...albumData,
+        isFeatured: validatedData.isFeatured,
         promotionEnabled: validatedData.promotionEnabled,
         promotionMinPhotos: validatedData.promotionMinPhotos,
         promotionDiscountBps: percentToBps(validatedData.promotionDiscountPercent),
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : "";
 
-      if (!message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
+      if (!message.includes("isFeatured") && !message.includes("promotionEnabled") && !message.includes("promotionMinPhotos") && !message.includes("promotionDiscountBps")) {
         throw error;
       }
 

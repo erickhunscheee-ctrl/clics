@@ -87,6 +87,21 @@ export default async function Home({ searchParams }: HomeProps) {
       ORDER BY a."eventDate" DESC NULLS LAST
     `
     .catch(() => []);
+  const featuredAlbumId = await prisma
+    .$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM "albums"
+      WHERE status = 'PUBLISHED' AND "isFeatured" = true
+      ORDER BY "updatedAt" DESC
+      LIMIT 1
+    `
+    .then((rows) => rows[0]?.id ?? null)
+    .catch(() => null);
+  const featuredAlbum =
+    albums.find((album) => album.id === featuredAlbumId) ?? albums[0] ?? null;
+  const carouselAlbums = featuredAlbum
+    ? albums.filter((album) => album.id !== featuredAlbum.id)
+    : [];
 
   const brandConcepts: Array<{ label: string; icon: typeof Sparkles }> = [];
   const visualStyles: Array<{ title: string; text: string; icon: typeof Sparkles }> = [];
@@ -319,6 +334,191 @@ export default async function Home({ searchParams }: HomeProps) {
               <p className="text-sm max-w-sm mx-auto" style={{ color: "#9ca3af" }}>
                 No momento não há álbuns públicos. Entre em contato com seu fotógrafo.
               </p>
+            </div>
+          ) : featuredAlbum ? (
+            <div className="space-y-8">
+              <Link
+                href={`/album/${featuredAlbum.slug}`}
+                className="group grid overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_60px_rgba(6,19,55,0.08)] transition-all duration-300 hover:-translate-y-1 md:grid-cols-[1.15fr_0.85fr]"
+              >
+                <div className="relative min-h-[20rem] overflow-hidden bg-gray-100 md:min-h-[25rem]">
+                  <img
+                    src={featuredAlbum.coverImageUrl || "/placeholder.jpg"}
+                    alt={featuredAlbum.title}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  <div className="absolute left-5 top-5 rounded-full bg-white/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-[#061337] shadow-sm backdrop-blur-md">
+                    Album em destaque
+                  </div>
+                  <div className="absolute bottom-5 left-5 right-5 flex flex-wrap items-center gap-2">
+                    <span
+                      className="rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white"
+                      style={{ background: "rgba(21,155,239,0.9)", backdropFilter: "blur(4px)" }}
+                    >
+                      {featuredAlbum._count.photos} fotos
+                    </span>
+                    <span
+                      className="rounded-xl px-3 py-1.5 text-xs font-bold text-white"
+                      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+                    >
+                      A partir de {formatCurrency(featuredAlbum.defaultPhotoPrice)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-between p-6 md:p-8">
+                  <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#159BEF]">
+                          Destaque da semana
+                        </p>
+                        <h3
+                          className="mt-3 text-3xl font-black leading-tight text-[#061337] md:text-4xl"
+                          style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}
+                        >
+                          {featuredAlbum.title}
+                        </h3>
+                      </div>
+                      <div onClick={(event) => event.preventDefault()}>
+                        <FavoriteButton
+                          type="album"
+                          album={{
+                            id: featuredAlbum.id,
+                            slug: featuredAlbum.slug,
+                            title: featuredAlbum.title,
+                            coverImageUrl: featuredAlbum.coverImageUrl,
+                            defaultPhotoPrice: featuredAlbum.defaultPhotoPrice,
+                          }}
+                          className="bg-[#F6F8FC] hover:bg-slate-100 text-gray-800 shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {featuredAlbum.description && (
+                      <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-slate-500">
+                        {featuredAlbum.description}
+                      </p>
+                    )}
+
+                    <div className="mt-6 flex flex-col gap-2 text-sm text-slate-500">
+                      {featuredAlbum.eventDate && (
+                        <div className="flex items-center gap-2">
+                          <Calendar size={15} style={{ color: "#159BEF" }} />
+                          <span>{new Date(featuredAlbum.eventDate).toLocaleDateString("pt-BR")}</span>
+                        </div>
+                      )}
+                      {featuredAlbum.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={15} style={{ color: "#159BEF" }} />
+                          <span className="truncate">{featuredAlbum.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-black text-white transition-all group-hover:opacity-90"
+                    style={{ background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)" }}
+                  >
+                    Acessar album em destaque <ArrowRight size={16} />
+                  </div>
+                </div>
+              </Link>
+
+              {carouselAlbums.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#9ca3af]">
+                      Outros albuns
+                    </h3>
+                    <span className="text-xs font-semibold text-[#9ca3af]">
+                      Arraste para ver mais
+                    </span>
+                  </div>
+
+                  <div className="flex snap-x gap-5 overflow-x-auto pb-3">
+                    {carouselAlbums.map((album) => (
+                      <Link
+                        key={album.id}
+                        href={`/album/${album.slug}`}
+                        className="group min-w-[78%] snap-start bg-white rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 sm:min-w-[22rem] md:min-w-[24rem]"
+                        style={{ boxShadow: "0 2px 16px 0 rgba(6,19,55,0.07)" }}
+                      >
+                        <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+                          <img
+                            src={album.coverImageUrl || "/placeholder.jpg"}
+                            alt={album.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                          />
+
+                          <div className="absolute top-3 right-3 z-10">
+                            <FavoriteButton
+                              type="album"
+                              album={{
+                                id: album.id,
+                                slug: album.slug,
+                                title: album.title,
+                                coverImageUrl: album.coverImageUrl,
+                                defaultPhotoPrice: album.defaultPhotoPrice,
+                              }}
+                              className="bg-white/80 backdrop-blur-md hover:bg-white text-gray-800 shadow-sm"
+                            />
+                          </div>
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-lg"
+                              style={{ background: "rgba(21,155,239,0.85)", backdropFilter: "blur(4px)" }}>
+                              {album._count.photos} fotos
+                            </span>
+                            <span className="text-[10px] font-bold text-white px-2.5 py-1 rounded-lg"
+                              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                              A partir de {formatCurrency(album.defaultPhotoPrice)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-5 flex flex-col gap-3 flex-1">
+                          <h3 className="font-bold text-base line-clamp-1 group-hover:text-[#159BEF] transition-colors"
+                            style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)", color: "#061337" }}>
+                            {album.title}
+                          </h3>
+                          {album.description && (
+                            <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "#6b7280" }}>
+                              {album.description}
+                            </p>
+                          )}
+                          <div className="flex flex-col gap-1.5 text-xs mt-auto" style={{ color: "#9ca3af" }}>
+                            {album.eventDate && (
+                              <div className="flex items-center gap-1.5">
+                                <Calendar size={13} style={{ color: "#159BEF" }} />
+                                <span>{new Date(album.eventDate).toLocaleDateString("pt-BR")}</span>
+                              </div>
+                            )}
+                            {album.location && (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin size={13} style={{ color: "#159BEF" }} />
+                                <span className="truncate">{album.location}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="px-5 pb-5">
+                          <div
+                            className="w-full py-2.5 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all group-hover:opacity-90"
+                            style={{ background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)" }}
+                          >
+                            Acessar Galeria <ArrowRight size={14} />
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

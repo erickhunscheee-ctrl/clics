@@ -38,6 +38,7 @@ CREATE TABLE "albums" (
     "location" TEXT,
     "coverImageUrl" TEXT,
     "defaultPhotoPrice" INTEGER NOT NULL DEFAULT 0,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
     "promotionEnabled" BOOLEAN NOT NULL DEFAULT false,
     "promotionMinPhotos" INTEGER NOT NULL DEFAULT 0,
     "promotionDiscountBps" INTEGER NOT NULL DEFAULT 0,
@@ -140,6 +141,9 @@ CREATE INDEX "albums_photographerId_idx" ON "albums"("photographerId");
 
 -- CreateIndex
 CREATE INDEX "albums_slug_idx" ON "albums"("slug");
+
+-- CreateIndex
+CREATE INDEX "albums_isFeatured_idx" ON "albums"("isFeatured");
 
 -- CreateIndex
 CREATE INDEX "photos_albumId_idx" ON "photos"("albumId");

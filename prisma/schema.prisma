@@ -63,6 +63,7 @@ model Album {
   location          String?
   coverImageUrl     String?
   defaultPhotoPrice Int         @default(0) // Price in centavos (BRL)
+  isFeatured        Boolean     @default(false)
   promotionEnabled  Boolean     @default(false)
   promotionMinPhotos Int        @default(0)
   promotionDiscountBps Int      @default(0) // 10000 = 100%
@@ -77,6 +78,7 @@ model Album {
 
   @@index([photographerId])
   @@index([slug])
+  @@index([isFeatured])
   @@map("albums")
 }
 
