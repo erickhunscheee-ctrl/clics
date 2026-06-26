@@ -10,61 +10,107 @@ export async function GET(
 
     if (!slug) {
       return NextResponse.json(
-        { message: "Slug do álbum não fornecido." },
+        { message: "Slug do album nao fornecido." },
         { status: 400 }
       );
     }
 
-    // Busca o álbum publicado com suas fotos ativas
-    const album = await prisma.album.findUnique({
-      where: {
-        slug: slug,
-      },
-      include: {
-        photos: {
-          where: {
-            status: "ACTIVE",
-          },
-          select: {
-            id: true,
-            folderId: true,
-            originalFileName: true,
-            previewUrl: true,
-            price: true,
-            width: true,
-            height: true,
-            fileSize: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-        folders: {
-          orderBy: {
-            createdAt: "asc",
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        photographer: {
-          select: {
-            name: true,
-            avatarUrl: true,
-          },
+    const baseAlbumSelect = {
+      id: true,
+      title: true,
+      description: true,
+      eventDate: true,
+      location: true,
+      coverImageUrl: true,
+      defaultPhotoPrice: true,
+      status: true,
+      photographer: {
+        select: {
+          name: true,
+          avatarUrl: true,
         },
       },
-    });
+    } as const;
+
+    const album = await prisma.album
+      .findUnique({
+        where: { slug },
+        select: {
+          ...baseAlbumSelect,
+          photos: {
+            where: { status: "ACTIVE" },
+            select: {
+              id: true,
+              folderId: true,
+              originalFileName: true,
+              previewUrl: true,
+              price: true,
+              width: true,
+              height: true,
+              fileSize: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+          folders: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      })
+      .catch(() =>
+        prisma.album.findUnique({
+          where: { slug },
+          select: {
+            ...baseAlbumSelect,
+            photos: {
+              where: { status: "ACTIVE" },
+              select: {
+                id: true,
+                originalFileName: true,
+                previewUrl: true,
+                price: true,
+                width: true,
+                height: true,
+                fileSize: true,
+              },
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        })
+      );
 
     if (!album || album.status !== "PUBLISHED") {
       return NextResponse.json(
-        { message: "Álbum não encontrado ou não está publicado." },
+        { message: "Album nao encontrado ou nao esta publicado." },
         { status: 404 }
       );
     }
 
-    // Mapeia para não retornar informações desnecessárias ou sensíveis do fotógrafo/álbum
+    const promotion = await prisma
+      .$queryRaw<
+        Array<{
+          promotionEnabled: boolean;
+          promotionMinPhotos: number;
+          promotionDiscountBps: number;
+        }>
+      >`
+        SELECT "promotionEnabled", "promotionMinPhotos", "promotionDiscountBps"
+        FROM "albums"
+        WHERE id = ${album.id}
+        LIMIT 1
+      `
+      .then((rows) => rows[0] ?? null)
+      .catch(() => null);
+
+    const folders = "folders" in album ? album.folders : [];
+    const photos = album.photos.map((photo) => ({
+      ...photo,
+      folderId: "folderId" in photo ? photo.folderId : null,
+    }));
+
     return NextResponse.json({
       id: album.id,
       title: album.title,
@@ -73,17 +119,17 @@ export async function GET(
       location: album.location,
       coverImageUrl: album.coverImageUrl,
       defaultPhotoPrice: album.defaultPhotoPrice,
-      promotionEnabled: album.promotionEnabled,
-      promotionMinPhotos: album.promotionMinPhotos,
-      promotionDiscountBps: album.promotionDiscountBps,
+      promotionEnabled: promotion?.promotionEnabled ?? false,
+      promotionMinPhotos: promotion?.promotionMinPhotos ?? 0,
+      promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
       photographer: album.photographer,
-      folders: album.folders,
-      photos: album.photos,
+      folders,
+      photos,
     });
   } catch (error: unknown) {
-    console.error("Erro ao buscar álbum público:", error);
+    console.error("Erro ao buscar album publico:", error);
     return NextResponse.json(
-      { message: "Erro interno do servidor ao carregar o álbum." },
+      { message: "Erro interno do servidor ao carregar o album." },
       { status: 500 }
     );
   }

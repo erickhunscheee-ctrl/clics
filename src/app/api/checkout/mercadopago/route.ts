@@ -53,9 +53,22 @@ export async function POST(request: Request) {
       }
     }
 
-    const album = await prisma.album.findUnique({
-      where: { id: albumId, status: "PUBLISHED" },
-    });
+    const album = await prisma.album
+      .findUnique({
+        where: { id: albumId, status: "PUBLISHED" },
+        select: {
+          id: true,
+          promotionEnabled: true,
+          promotionMinPhotos: true,
+          promotionDiscountBps: true,
+        },
+      })
+      .catch(() =>
+        prisma.album.findUnique({
+          where: { id: albumId, status: "PUBLISHED" },
+          select: { id: true },
+        })
+      );
 
     if (!album) {
       return NextResponse.json(
@@ -83,7 +96,11 @@ export async function POST(request: Request) {
     // Calcula o total em centavos com a promocao vigente do album.
     const { totalAmount } = calculatePromotionTotal(
       photos.map((photo) => photo.price),
-      album
+      {
+        promotionEnabled: "promotionEnabled" in album ? album.promotionEnabled : false,
+        promotionMinPhotos: "promotionMinPhotos" in album ? album.promotionMinPhotos : 0,
+        promotionDiscountBps: "promotionDiscountBps" in album ? album.promotionDiscountBps : 0,
+      }
     );
 
     // Gera um token de acesso para o pedido com validade de 30 dias

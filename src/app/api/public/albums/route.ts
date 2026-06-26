@@ -25,7 +25,15 @@ export async function GET(request: NextRequest) {
             ]
           : undefined,
       },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        eventDate: true,
+        location: true,
+        coverImageUrl: true,
+        defaultPhotoPrice: true,
         photographer: { select: { name: true, avatarUrl: true } },
         _count: { select: { photos: true } },
       },
