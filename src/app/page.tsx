@@ -46,6 +46,22 @@ export default async function Home({ searchParams }: HomeProps) {
     },
     orderBy: { eventDate: "desc" },
   });
+  const activePromotions = albums
+    .filter(
+      (album) =>
+        album.promotionEnabled &&
+        album.promotionMinPhotos > 0 &&
+        album.promotionDiscountBps > 0 &&
+        album._count.photos >= album.promotionMinPhotos
+    )
+    .map((album) => ({
+      id: album.id,
+      slug: album.slug,
+      title: album.title,
+      coverImageUrl: album.coverImageUrl,
+      promotionMinPhotos: album.promotionMinPhotos,
+      promotionDiscountBps: album.promotionDiscountBps,
+    }));
 
   const brandConcepts: Array<{ label: string; icon: typeof Sparkles }> = [];
   const visualStyles: Array<{ title: string; text: string; icon: typeof Sparkles }> = [];
@@ -165,7 +181,7 @@ export default async function Home({ searchParams }: HomeProps) {
           CONTEÚDO — Galeria de Álbuns
       ═══════════════════════════════════════════ */}
       <main className="container mx-auto px-4 pt-28 md:pt-32 max-w-6xl space-y-12 pb-24 md:pb-10">
-        <HomeHeroSection sellerHref={sellerHref} />
+        <HomeHeroSection sellerHref={sellerHref} promotions={activePromotions} />
 
         <section className="hidden">
           <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">

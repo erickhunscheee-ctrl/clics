@@ -28,7 +28,7 @@ async function createLogoWatermarkOverlay(width: number, height: number): Promis
         height="${logoHeight}"
         x="${(width - logoWidth) / 2}"
         y="${(height - logoHeight) / 2}"
-        opacity="0.42"
+        opacity="0.60"
         preserveAspectRatio="xMidYMid meet"
       />
     </svg>
