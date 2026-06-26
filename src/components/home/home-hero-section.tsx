@@ -1,12 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CreditCard, Download, Shield, ShoppingCart } from "lucide-react";
 
-interface HomeHeroSectionProps {
-  sellerHref: string;
-}
-
-export function HomeHeroSection({ sellerHref }: HomeHeroSectionProps) {
+export function HomeHeroSection() {
+  const contactHref = "https://wa.me/55519991261";
   const highlights = [
     { icon: CreditCard, text: "Pague em ate 12x no cartao" },
     { icon: Download, text: "Download liberado apos pagamento" },
@@ -24,17 +20,9 @@ export function HomeHeroSection({ sellerHref }: HomeHeroSectionProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7B3FF2]">
             Marketplace de fotos
           </p>
-          <div className="mt-5 flex items-center justify-center gap-4 lg:justify-start">
-            <Image
-              src="/logo_clics.png"
-              alt="CLICS"
-              width={112}
-              height={112}
-              className="h-16 w-16 object-contain drop-shadow-[0_18px_40px_rgba(21,155,239,0.2)] sm:h-20 sm:w-20"
-              priority
-            />
+          <div className="mt-5 flex items-center justify-center lg:justify-start">
             <span
-              className="text-4xl font-semibold tracking-[0.2em] text-[#061337] sm:text-5xl"
+              className="text-4xl font-semibold tracking-[0.24em] text-[#061337] sm:text-5xl"
               style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}
             >
               CLICS
@@ -57,10 +45,12 @@ export function HomeHeroSection({ sellerHref }: HomeHeroSectionProps) {
               Ver albuns <ShoppingCart size={16} />
             </Link>
             <Link
-              href={sellerHref}
+              href={contactHref}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#7B3FF2]/40 bg-white px-5 py-3 text-sm font-bold text-[#7B3FF2] transition hover:-translate-y-0.5 hover:border-[#7B3FF2]"
             >
-              Vender fotos <ArrowRight size={16} />
+              Entre em contato <ArrowRight size={16} />
             </Link>
           </div>
         </div>

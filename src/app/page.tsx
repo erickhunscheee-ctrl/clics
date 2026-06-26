@@ -207,7 +207,7 @@ export default async function Home({ searchParams }: HomeProps) {
       ═══════════════════════════════════════════ */}
       <main className="container mx-auto px-4 pt-28 md:pt-32 max-w-6xl space-y-6 pb-24 md:pb-10">
         <HomePromotionsCarousel promotions={activePromotions} />
-        <HomeHeroSection sellerHref={sellerHref} />
+        <HomeHeroSection />
 
         <section className="hidden">
           <div className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_60px_rgba(6,19,55,0.06)]">
