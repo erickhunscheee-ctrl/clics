@@ -27,6 +27,7 @@ export async function GET(
           },
           select: {
             id: true,
+            folderId: true,
             originalFileName: true,
             previewUrl: true,
             price: true,
@@ -36,6 +37,15 @@ export async function GET(
           },
           orderBy: {
             createdAt: "desc",
+          },
+        },
+        folders: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+            name: true,
           },
         },
         photographer: {
@@ -67,6 +77,7 @@ export async function GET(
       promotionMinPhotos: album.promotionMinPhotos,
       promotionDiscountBps: album.promotionDiscountBps,
       photographer: album.photographer,
+      folders: album.folders,
       photos: album.photos,
     });
   } catch (error: unknown) {

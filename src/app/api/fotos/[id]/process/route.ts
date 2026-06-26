@@ -22,6 +22,8 @@ export async function POST(request: Request, { params }: Params) {
     // Recebe o arquivo via multipart form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
+    const rawFolderId = formData.get("folderId");
+    const folderId = typeof rawFolderId === "string" && rawFolderId.trim() ? rawFolderId.trim() : null;
 
     if (!file) {
       return NextResponse.json({ message: "Nenhum arquivo enviado." }, { status: 400 });
@@ -36,6 +38,23 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     assertOwnership(user.id, album.photographerId);
+
+    if (folderId) {
+      const folder = await prisma.albumFolder.findFirst({
+        where: {
+          id: folderId,
+          albumId: album.id,
+        },
+        select: { id: true },
+      });
+
+      if (!folder) {
+        return NextResponse.json(
+          { message: "Pasta nao encontrada neste album." },
+          { status: 404 }
+        );
+      }
+    }
 
     // 1. Converte o arquivo para Buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -78,6 +97,7 @@ export async function POST(request: Request, { params }: Params) {
     const photo = await prisma.photo.create({
       data: {
         albumId: album.id,
+        folderId,
         originalFileName,
         originalMimeType,
         driveFileId,

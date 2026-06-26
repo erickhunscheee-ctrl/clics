@@ -52,6 +52,7 @@ CREATE TABLE "albums" (
 CREATE TABLE "photos" (
     "id" TEXT NOT NULL,
     "albumId" TEXT NOT NULL,
+    "folderId" TEXT,
     "originalFileName" TEXT NOT NULL,
     "originalMimeType" TEXT NOT NULL,
     "driveFileId" TEXT NOT NULL,
@@ -66,6 +67,16 @@ CREATE TABLE "photos" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "photos_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "album_folders" (
+    "id" TEXT NOT NULL,
+    "albumId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "album_folders_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -132,6 +143,9 @@ CREATE INDEX "albums_slug_idx" ON "albums"("slug");
 
 -- CreateIndex
 CREATE INDEX "photos_albumId_idx" ON "photos"("albumId");
+CREATE INDEX "photos_folderId_idx" ON "photos"("folderId");
+CREATE UNIQUE INDEX "album_folders_albumId_name_key" ON "album_folders"("albumId", "name");
+CREATE INDEX "album_folders_albumId_idx" ON "album_folders"("albumId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "orders_orderNumber_key" ON "orders"("orderNumber");
@@ -162,6 +176,8 @@ ALTER TABLE "albums" ADD CONSTRAINT "albums_photographerId_fkey" FOREIGN KEY ("p
 
 -- AddForeignKey
 ALTER TABLE "photos" ADD CONSTRAINT "photos_albumId_fkey" FOREIGN KEY ("albumId") REFERENCES "albums"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "photos" ADD CONSTRAINT "photos_folderId_fkey" FOREIGN KEY ("folderId") REFERENCES "album_folders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "album_folders" ADD CONSTRAINT "album_folders_albumId_fkey" FOREIGN KEY ("albumId") REFERENCES "albums"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_albumId_fkey" FOREIGN KEY ("albumId") REFERENCES "albums"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

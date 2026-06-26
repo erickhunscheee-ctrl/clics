@@ -20,6 +20,10 @@ export async function GET(request: Request, { params }: Params) {
     const album = await prisma.album.findUnique({
       where: { id },
       include: {
+        folders: {
+          orderBy: { createdAt: "asc" },
+          include: { _count: { select: { photos: true } } },
+        },
         photos: {
           orderBy: { createdAt: "desc" },
         },

@@ -4,12 +4,13 @@ import { useState } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { formatCurrency } from "@/lib/money";
-import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight, Folder } from "lucide-react";
 import Link from "next/link";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 
 interface Photo {
   id: string;
+  folderId: string | null;
   originalFileName: string;
   previewUrl: string;
   price: number;
@@ -27,6 +28,10 @@ interface Album {
   promotionEnabled: boolean;
   promotionMinPhotos: number;
   promotionDiscountBps: number;
+  folders: Array<{
+    id: string;
+    name: string;
+  }>;
   photographer: {
     name: string;
     avatarUrl: string | null;
@@ -41,6 +46,7 @@ interface PhotoGalleryProps {
 export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   const { items, addToCart, removeFromCart, isInCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>("all");
   const promotion = {
     promotionEnabled: album.promotionEnabled,
     promotionMinPhotos: album.promotionMinPhotos,
@@ -51,7 +57,12 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   // Modal de visualização ampliada
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
 
-  const activePhoto = activePhotoIndex !== null ? photos[activePhotoIndex] : null;
+  const hasUnfolderedPhotos = photos.some((photo) => photo.folderId === null);
+  const visiblePhotos =
+    activeFolderId === "all"
+      ? photos
+      : photos.filter((photo) => photo.folderId === activeFolderId);
+  const activePhoto = activePhotoIndex !== null ? visiblePhotos[activePhotoIndex] : null;
 
   const handleToggleCart = (photo: Photo) => {
     if (isInCart(photo.id)) {
@@ -69,13 +80,13 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   const handlePrevPhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activePhotoIndex === null) return;
-    setActivePhotoIndex(activePhotoIndex === 0 ? photos.length - 1 : activePhotoIndex - 1);
+    setActivePhotoIndex(activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex - 1);
   };
 
   const handleNextPhoto = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activePhotoIndex === null) return;
-    setActivePhotoIndex(activePhotoIndex === photos.length - 1 ? 0 : activePhotoIndex + 1);
+    setActivePhotoIndex(activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex + 1);
   };
 
   const checkoutHref = `/checkout?album=${album.slug}`;
@@ -159,7 +170,56 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-10 pb-32">
-        {photos.length === 0 ? (
+        {(album.folders.length > 0 || hasUnfolderedPhotos) && (
+          <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFolderId("all");
+                setActivePhotoIndex(null);
+              }}
+              className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+                activeFolderId === "all" ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
+              }`}
+            >
+              <Folder size={14} />
+              Todas
+            </button>
+            {album.folders.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                onClick={() => {
+                  setActiveFolderId(folder.id);
+                  setActivePhotoIndex(null);
+                }}
+                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+                  activeFolderId === folder.id ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
+                }`}
+              >
+                <Folder size={14} />
+                {folder.name}
+              </button>
+            ))}
+            {hasUnfolderedPhotos && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFolderId(null);
+                  setActivePhotoIndex(null);
+                }}
+                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+                  activeFolderId === null ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
+                }`}
+              >
+                <Folder size={14} />
+                Sem pasta
+              </button>
+            )}
+          </div>
+        )}
+
+        {visiblePhotos.length === 0 ? (
           <div className="text-center py-20 bg-white border border-slate-200/60 rounded-3xl space-y-4 shadow-sm">
             <h3 className="text-lg font-bold text-[#061337]" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}>Nenhuma foto publicada</h3>
             <p className="text-slate-400 max-w-sm mx-auto text-sm">
@@ -168,7 +228,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {photos.map((photo, index) => {
+            {visiblePhotos.map((photo, index) => {
               const selected = isInCart(photo.id);
               return (
                 <div

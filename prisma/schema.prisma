@@ -72,6 +72,7 @@ model Album {
 
   photographer User    @relation(fields: [photographerId], references: [id], onDelete: Cascade)
   photos       Photo[]
+  folders      AlbumFolder[]
   orders       Order[]
 
   @@index([photographerId])
@@ -82,6 +83,7 @@ model Album {
 model Photo {
   id               String      @id @default(cuid())
   albumId          String
+  folderId         String?
   originalFileName String
   originalMimeType String
   driveFileId      String
@@ -95,11 +97,28 @@ model Photo {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
-  album      Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  album      Album        @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  folder     AlbumFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
 
   @@index([albumId])
+  @@index([folderId])
   @@map("photos")
+}
+
+model AlbumFolder {
+  id        String   @id @default(cuid())
+  albumId   String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  album  Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  photos Photo[]
+
+  @@unique([albumId, name])
+  @@index([albumId])
+  @@map("album_folders")
 }
 
 model Order {

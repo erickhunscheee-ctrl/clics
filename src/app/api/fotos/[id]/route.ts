@@ -5,12 +5,12 @@ import { assertOwnership } from "@/lib/permissions";
 import { deletePreviewFromR2 } from "@/lib/r2";
 import { deleteFromDrive } from "@/lib/google-drive";
 import { photoSchema } from "@/lib/validators/photo";
+import { ZodError } from "zod";
 
 interface Params {
-  params: Promise<{ id: string }>; // photoId
+  params: Promise<{ id: string }>;
 }
 
-// PUT /api/fotos/[id] - Editar preço e status da foto
 export async function PUT(request: Request, { params }: Params) {
   try {
     const user = await requirePhotographer();
@@ -27,38 +27,55 @@ export async function PUT(request: Request, { params }: Params) {
     });
 
     if (!photo) {
-      return NextResponse.json({ message: "Foto não encontrada." }, { status: 404 });
+      return NextResponse.json({ message: "Foto nao encontrada." }, { status: 404 });
     }
 
     assertOwnership(user.id, photo.album.photographerId);
 
     const validatedData = photoSchema.parse(body);
 
+    if (validatedData.folderId) {
+      const folder = await prisma.albumFolder.findFirst({
+        where: {
+          id: validatedData.folderId,
+          albumId: photo.albumId,
+        },
+        select: { id: true },
+      });
+
+      if (!folder) {
+        return NextResponse.json(
+          { message: "Pasta nao encontrada neste album." },
+          { status: 404 }
+        );
+      }
+    }
+
     const updatedPhoto = await prisma.photo.update({
       where: { id: photoId },
       data: {
-        price: Math.round(validatedData.price * 100), // Reais para centavos
+        price: Math.round(validatedData.price * 100),
         status: validatedData.status,
+        folderId: validatedData.folderId ?? null,
       },
     });
 
     return NextResponse.json(updatedPhoto);
-  } catch (error: any) {
-    if (error.name === "ZodError") {
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { message: "Dados inválidos.", errors: error.errors },
+        { message: "Dados invalidos.", errors: error.issues },
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { message: error.message || "Erro ao atualizar foto." },
-      { status: 500 }
-    );
+
+    const message = error instanceof Error ? error.message : "Erro ao atualizar foto.";
+
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
 
-// DELETE /api/fotos/[id] - Excluir foto permanentemente
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await requirePhotographer();
     const photoId = (await params).id;
@@ -73,35 +90,31 @@ export async function DELETE(request: Request, { params }: Params) {
     });
 
     if (!photo) {
-      return NextResponse.json({ message: "Foto não encontrada." }, { status: 404 });
+      return NextResponse.json({ message: "Foto nao encontrada." }, { status: 404 });
     }
 
     assertOwnership(user.id, photo.album.photographerId);
 
-    // 1. Remove do R2
     try {
       await deletePreviewFromR2(photo.previewR2Key);
-    } catch (e) {
-      console.error("Falha ao apagar do R2:", e);
+    } catch (error) {
+      console.error("Falha ao apagar do R2:", error);
     }
 
-    // 2. Remove do Google Drive
     try {
       await deleteFromDrive(photo.driveFileId);
-    } catch (e) {
-      console.error("Falha ao apagar do Drive:", e);
+    } catch (error) {
+      console.error("Falha ao apagar do Drive:", error);
     }
 
-    // 3. Remove do Banco
     await prisma.photo.delete({
       where: { id: photoId },
     });
 
     return NextResponse.json({ message: "Foto deletada com sucesso." });
-  } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || "Erro ao deletar foto." },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Erro ao deletar foto.";
+
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

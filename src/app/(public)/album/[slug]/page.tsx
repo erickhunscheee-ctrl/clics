@@ -46,12 +46,22 @@ export default async function PublicAlbumPage({ params }: PublicAlbumPageProps) 
         },
         select: {
           id: true,
+          folderId: true,
           originalFileName: true,
           previewUrl: true,
           price: true,
         },
         orderBy: {
           createdAt: "desc",
+        },
+      },
+      folders: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          name: true,
         },
       },
       photographer: {
