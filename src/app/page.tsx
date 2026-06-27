@@ -386,7 +386,7 @@ export default async function Home({ searchParams }: HomeProps) {
                           {featuredAlbum.title}
                         </h3>
                       </div>
-                      <div onClick={(event) => event.preventDefault()}>
+                      <div>
                         <FavoriteButton
                           type="album"
                           album={{
