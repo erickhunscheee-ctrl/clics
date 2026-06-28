@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { formatCurrency } from "@/lib/money";
 import { ShoppingBag, ArrowLeft, Loader2, CreditCard, QrCode, Copy, CheckCircle2, Lock, Shield } from "lucide-react";
@@ -66,6 +65,8 @@ type InstallmentsResult = {
   options: InstallmentOption[];
   notice: string;
 };
+
+const MERCADO_PAGO_SDK_URL = "https://sdk.mercadopago.com/js/v2";
 
 const MERCADO_PAGO_PUBLIC_INSTALLMENT_FEES: Record<number, number> = {
   1: 4.98,
@@ -138,6 +139,64 @@ function normalizeMercadoPagoInstallments(
     .sort((a, b) => a.installments - b.installments);
 }
 
+function loadMercadoPagoSdkScript() {
+  return new Promise<void>((resolve, reject) => {
+    if (typeof window === "undefined") {
+      reject(new Error("O Mercado Pago so pode ser carregado no navegador."));
+      return;
+    }
+
+    if (window.MercadoPago) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      `script[src="${MERCADO_PAGO_SDK_URL}"]`
+    );
+    const script = existingScript ?? document.createElement("script");
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    function cleanup() {
+      clearTimeout(timeoutId);
+      script.removeEventListener("load", handleLoad);
+      script.removeEventListener("error", handleError);
+    }
+    function handleLoad() {
+      cleanup();
+      if (window.MercadoPago) {
+        resolve();
+        return;
+      }
+      reject(new Error("O SDK do Mercado Pago carregou sem expor o gateway."));
+    }
+    function handleError() {
+      cleanup();
+      if (!window.MercadoPago && script.isConnected) script.remove();
+      reject(new Error("Nao foi possivel carregar o SDK do Mercado Pago."));
+    }
+
+    script.addEventListener("load", handleLoad);
+    script.addEventListener("error", handleError);
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      if (window.MercadoPago) {
+        resolve();
+        return;
+      }
+      if (script.isConnected) script.remove();
+      reject(new Error("O Mercado Pago demorou para responder. Verifique sua conexao e tente novamente."));
+    }, 10000);
+
+    if (!existingScript) {
+      script.src = MERCADO_PAGO_SDK_URL;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  });
+}
+
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<CheckoutFallback />}>
@@ -185,6 +244,8 @@ function CheckoutContent() {
   const [loadingMethod, setLoadingMethod] = useState<"PIX" | "CREDIT_CARD" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
+  const [sdkLoading, setSdkLoading] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
   const [pixCopied, setPixCopied] = useState(false);
 
   // Estado do Modal do Pix
@@ -196,6 +257,9 @@ function CheckoutContent() {
 
   // Instância do Mercado Pago no Cliente
   const [mpInstance, setMpInstance] = useState<MercadoPagoInstance | null>(null);
+  const mpInstanceRef = useRef<MercadoPagoInstance | null>(null);
+  const mpInitPromiseRef = useRef<Promise<MercadoPagoInstance | null> | null>(null);
+  const sdkErrorRef = useRef<string | null>(null);
   const cardBin = cardNumber.replace(/\D/g, "").substring(0, 6);
   const fallbackInstallmentOptions = buildFallbackInstallments(totalAmount);
   const hasMercadoPagoInstallments =
@@ -208,27 +272,81 @@ function CheckoutContent() {
       ? "Previa calculada com a tabela publica de juros do Mercado Pago. Digite os 6 primeiros numeros do cartao para validar."
       : installmentsLoading
         ? "Atualizando parcelas..."
+        : sdkError
+          ? sdkError
         : installmentsResult?.bin === cardBin
           ? installmentsResult.notice
-          : "Carregando o Mercado Pago para consultar os juros reais.";
+          : sdkLoading || !sdkReady
+            ? "Carregando o Mercado Pago para consultar os juros reais."
+            : "Consultando o Mercado Pago para validar as parcelas.";
 
-  const handleScriptLoad = async () => {
-    if (typeof window !== "undefined" && window.MercadoPago) {
-      const publicKey =
-        process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY ||
-        (await fetch("/api/checkout/mercadopago/public-key")
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data: { publicKey?: string } | null) => data?.publicKey)
-          .catch(() => null));
+  const initializeMercadoPago = useCallback(async () => {
+    if (mpInstanceRef.current) return mpInstanceRef.current;
+    if (mpInitPromiseRef.current) return mpInitPromiseRef.current;
+
+    setSdkLoading(true);
+    setSdkError(null);
+    sdkErrorRef.current = null;
+
+    mpInitPromiseRef.current = (async () => {
+      await loadMercadoPagoSdkScript();
+
+      if (!window.MercadoPago) {
+        throw new Error("O SDK do Mercado Pago nao ficou disponivel no navegador.");
+      }
+
+      let publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
+      if (!publicKey) {
+        const response = await fetch("/api/checkout/mercadopago/public-key");
+        const data = (await response.json().catch(() => null)) as { publicKey?: string; message?: string } | null;
+
+        if (!response.ok) {
+          throw new Error(data?.message || "Chave publica do Mercado Pago nao configurada.");
+        }
+        publicKey = data?.publicKey;
+      }
 
       if (!publicKey) {
-        setError("Chave publica do Mercado Pago nao configurada.");
-        return;
+        throw new Error("Chave publica do Mercado Pago nao configurada.");
       }
+
       const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
+      mpInstanceRef.current = mp;
       setMpInstance(mp);
       setSdkReady(true);
-    }
+      return mp;
+    })()
+      .catch((err) => {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Nao foi possivel iniciar o gateway do Mercado Pago.";
+        sdkErrorRef.current = message;
+        setSdkError(message);
+        setSdkReady(false);
+        mpInstanceRef.current = null;
+        setMpInstance(null);
+        return null;
+      })
+      .finally(() => {
+        setSdkLoading(false);
+        mpInitPromiseRef.current = null;
+      });
+
+    return mpInitPromiseRef.current;
+  }, []);
+
+  const handleScriptLoad = () => {
+    void initializeMercadoPago();
+  };
+
+  const handleScriptError = () => {
+    const message = "Nao foi possivel carregar o SDK do Mercado Pago. Verifique sua conexao e tente novamente.";
+    window.document.querySelector<HTMLScriptElement>(`script[src="${MERCADO_PAGO_SDK_URL}"]`)?.remove();
+    sdkErrorRef.current = message;
+    setSdkError(message);
+    setSdkReady(false);
+    setSdkLoading(false);
   };
 
   // Polling para checar pagamento do Pix
@@ -251,6 +369,11 @@ function CheckoutContent() {
     }, 5000);
     return () => clearInterval(intervalId);
   }, [pixModalData, clearCart, router]);
+
+  useEffect(() => {
+    if (!showCardForm) return;
+    void initializeMercadoPago();
+  }, [initializeMercadoPago, showCardForm]);
 
   useEffect(() => {
     if (!showCardForm || cardBin.length < 6 || !sdkReady || !mpInstance) return;
@@ -348,10 +471,6 @@ function CheckoutContent() {
   const handlePayCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0 || !albumId) return;
-    if (!sdkReady || !mpInstance) {
-      setError("O gateway de pagamento ainda está carregando. Por favor, aguarde alguns segundos.");
-      return;
-    }
     setLoadingMethod("CREDIT_CARD");
     setError(null);
     try {
@@ -361,7 +480,15 @@ function CheckoutContent() {
       const cleanDocument = document.replace(/\D/g, "");
       if (cleanDocument.length !== 11) throw new Error("Informe um CPF valido para pagar com cartao.");
 
-      const cardTokenResponse = await mpInstance.createCardToken({
+      const mercadoPago = mpInstanceRef.current || (await initializeMercadoPago());
+      if (!mercadoPago) {
+        throw new Error(
+          sdkErrorRef.current ||
+            "Nao foi possivel iniciar o gateway do Mercado Pago. Aguarde alguns segundos e tente novamente."
+        );
+      }
+
+      const cardTokenResponse = await mercadoPago.createCardToken({
         cardNumber: cardNumber.replace(/\s/g, ""),
         cardholderName: cardName,
         cardExpirationMonth: expiryMonth.trim(),
@@ -376,7 +503,7 @@ function CheckoutContent() {
       let issuerId: number | null = null;
       try {
         const bin = cardNumber.replace(/\D/g, "").substring(0, 6);
-        const paymentMethods = await mpInstance.getPaymentMethods({ bin });
+        const paymentMethods = await mercadoPago.getPaymentMethods({ bin });
         const paymentMethod = paymentMethods?.results?.[0];
         if (paymentMethod?.id) detectedMethodId = paymentMethod.id;
         const parsedIssuerId = Number(paymentMethod?.issuer?.id);
@@ -452,7 +579,12 @@ function CheckoutContent() {
   // ─── Página principal ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen pb-12" style={{ background: "#F6F8FC", color: "#061337", fontFamily: "var(--font-inter, Inter, sans-serif)" }}>
-      <Script src="https://sdk.mercadopago.com/js/v2" strategy="afterInteractive" onLoad={handleScriptLoad} />
+      <Script
+        src={MERCADO_PAGO_SDK_URL}
+        strategy="afterInteractive"
+        onLoad={handleScriptLoad}
+        onError={handleScriptError}
+      />
 
       {/* ── Header ────────────────────────────────────── */}
       <header className="sticky top-0 z-40 px-4 pt-4 pb-2" style={{ background: "#F6F8FC" }}>
@@ -677,7 +809,11 @@ function CheckoutContent() {
                 {!showCardForm ? (
                   <button
                     type="button"
-                    onClick={() => setShowCardForm(true)}
+                    onClick={() => {
+                      setShowCardForm(true);
+                      setError(null);
+                      void initializeMercadoPago();
+                    }}
                     className="w-full py-3.5 px-6 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer"
                     style={{
                       background: "white",
@@ -701,6 +837,8 @@ function CheckoutContent() {
                   >
                     {loadingMethod === "CREDIT_CARD" ? (
                       <><Loader2 className="animate-spin" size={17} /> Processando...</>
+                    ) : sdkLoading && !sdkReady ? (
+                      <><Loader2 className="animate-spin" size={17} /> Carregando gateway...</>
                     ) : (
                       <><Lock size={15} /> Finalizar com Cartão</>
                     )}
@@ -715,6 +853,16 @@ function CheckoutContent() {
                   Pagamento processado com segurança pelo Mercado Pago
                 </p>
               </div>
+              {showCardForm && (sdkReady || sdkError || sdkLoading) && (
+                <p
+                  className="text-[11px] text-center"
+                  style={{ color: sdkError ? "#dc2626" : "#9ca3af" }}
+                >
+                  {sdkReady
+                    ? "Gateway de cartao pronto."
+                    : sdkError || "Carregando gateway de cartao..."}
+                </p>
+              )}
             </form>
           </div>
         </div>
