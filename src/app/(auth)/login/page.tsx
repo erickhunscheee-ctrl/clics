@@ -7,6 +7,17 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, Loader2, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+function getSafeNextPath() {
+  if (typeof window === "undefined") return "/";
+
+  const nextPath = new URLSearchParams(window.location.search).get("next");
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return "/";
+  }
+
+  return nextPath;
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,16 +44,17 @@ export default function LoginPage() {
     }
 
     router.refresh();
-    router.push("/");
+    router.replace(getSafeNextPath());
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError(null);
+    const callbackParams = new URLSearchParams({ next: getSafeNextPath() });
     const { error: googleError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?${callbackParams.toString()}`,
       },
     });
 

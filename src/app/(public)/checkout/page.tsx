@@ -225,6 +225,14 @@ function CheckoutContent() {
   const router = useRouter();
   const returnAlbumSlug = albumSlug || searchParams.get("album");
   const galleryHref = returnAlbumSlug ? `/album/${returnAlbumSlug}` : "/";
+  const redirectToLogin = useCallback(() => {
+    const nextPath =
+      typeof window === "undefined"
+        ? "/checkout"
+        : `${window.location.pathname}${window.location.search}`;
+
+    router.push(`/login?next=${encodeURIComponent(nextPath)}`);
+  }, [router]);
 
   // Dados complementares do comprador
   const [phone, setPhone] = useState("");
@@ -451,6 +459,10 @@ function CheckoutContent() {
         }),
       });
       if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
         const errData = await res.json();
         throw new Error(errData.message || "Erro ao processar o Pix.");
       }
@@ -526,6 +538,10 @@ function CheckoutContent() {
         }),
       });
       if (!res.ok) {
+        if (res.status === 401) {
+          redirectToLogin();
+          return;
+        }
         const errData = await res.json();
         throw new Error(errData.message || "Erro ao processar o cartão.");
       }
