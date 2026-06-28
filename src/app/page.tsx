@@ -113,13 +113,11 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen w-full overflow-x-hidden"
       style={{
         background: "#F6F8FC",
         color: "#061337",
         fontFamily: "var(--font-inter, Inter, sans-serif)",
-        width: "111.111%",
-        zoom: 0.9,
       }}
     >
 
