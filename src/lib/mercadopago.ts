@@ -1,17 +1,74 @@
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 
-const mercadoPagoAccessToken =
-  process.env.MERCADO_PAGO_ACCESS_TOKEN ||
-  process.env.mercado_pago_access_token ||
-  process.env.mercado_pago_acess_token;
-
-if (!mercadoPagoAccessToken) {
-  throw new Error("Token de acesso do Mercado Pago nao configurado.");
+export class MercadoPagoConfigError extends Error {
+  constructor() {
+    super("Token de acesso do Mercado Pago nao configurado.");
+    this.name = "MercadoPagoConfigError";
+  }
 }
 
-const client = new MercadoPagoConfig({
-  accessToken: mercadoPagoAccessToken,
-});
+export class MercadoPagoGatewayError extends Error {
+  status?: number;
+  causePayload?: unknown;
+
+  constructor(message: string, status?: number, causePayload?: unknown) {
+    super(message);
+    this.name = "MercadoPagoGatewayError";
+    this.status = status;
+    this.causePayload = causePayload;
+  }
+}
+
+let client: MercadoPagoConfig | null = null;
+
+function getMercadoPagoAccessToken() {
+  return (
+    process.env.MERCADO_PAGO_ACCESS_TOKEN ||
+    process.env.mercado_pago_access_token ||
+    process.env.mercado_pago_acess_token
+  );
+}
+
+function getMercadoPagoClient() {
+  if (client) return client;
+
+  const mercadoPagoAccessToken = getMercadoPagoAccessToken();
+  if (!mercadoPagoAccessToken) {
+    throw new MercadoPagoConfigError();
+  }
+
+  client = new MercadoPagoConfig({
+    accessToken: mercadoPagoAccessToken,
+  });
+
+  return client;
+}
+
+function readGatewayError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return { message: "Mercado Pago recusou a requisicao de pagamento." };
+  }
+
+  const payload = error as Record<string, unknown>;
+  const status = typeof payload.status === "number" ? payload.status : undefined;
+  const message =
+    typeof payload.message === "string"
+      ? payload.message
+      : typeof payload.error === "string"
+        ? payload.error
+        : "Mercado Pago recusou a requisicao de pagamento.";
+
+  return { message, status };
+}
+
+function toGatewayError(error: unknown) {
+  if (error instanceof MercadoPagoConfigError || error instanceof MercadoPagoGatewayError) {
+    return error;
+  }
+
+  const { message, status } = readGatewayError(error);
+  return new MercadoPagoGatewayError(message, status, error);
+}
 
 interface CreatePreferenceParams {
   orderId: string;
@@ -35,7 +92,7 @@ interface CreatePreferenceParams {
 export async function createPaymentPreference(params: CreatePreferenceParams) {
   const appUrl = process.env.APP_URL || "http://localhost:3000";
 
-  const preference = new Preference(client);
+  const preference = new Preference(getMercadoPagoClient());
   const paymentMethods =
     params.paymentMethod === "PIX"
       ? {
@@ -59,31 +116,35 @@ export async function createPaymentPreference(params: CreatePreferenceParams) {
           installments: 12,
         };
 
-  const result = await preference.create({
-    body: {
-      items: params.items.map((item) => ({
-        id: params.orderId,
-        title: item.title,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        currency_id: "BRL",
-      })),
-      payer: {
-        name: params.payer.name,
-        email: params.payer.email,
+  const result = await preference
+    .create({
+      body: {
+        items: params.items.map((item) => ({
+          id: params.orderId,
+          title: item.title,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          currency_id: "BRL",
+        })),
+        payer: {
+          name: params.payer.name,
+          email: params.payer.email,
+        },
+        external_reference: params.orderId,
+        payment_methods: paymentMethods,
+        back_urls: {
+          success: `${appUrl}/pedido/${params.accessToken}?status=success`,
+          failure: `${appUrl}/pedido/${params.accessToken}?status=failure`,
+          pending: `${appUrl}/pedido/${params.accessToken}?status=pending`,
+        },
+        auto_return: "approved",
+        notification_url: `${appUrl}/api/webhooks/mercadopago`,
+        statement_descriptor: "FOTOS",
       },
-      external_reference: params.orderId,
-      payment_methods: paymentMethods,
-      back_urls: {
-        success: `${appUrl}/pedido/${params.accessToken}?status=success`,
-        failure: `${appUrl}/pedido/${params.accessToken}?status=failure`,
-        pending: `${appUrl}/pedido/${params.accessToken}?status=pending`,
-      },
-      auto_return: "approved",
-      notification_url: `${appUrl}/api/webhooks/mercadopago`,
-      statement_descriptor: "FOTOS",
-    },
-  });
+    })
+    .catch((error) => {
+      throw toGatewayError(error);
+    });
 
   return {
     preferenceId: result.id!,
@@ -96,8 +157,10 @@ export async function createPaymentPreference(params: CreatePreferenceParams) {
  * Get payment details from Mercado Pago API
  */
 export async function getPaymentDetails(paymentId: string) {
-  const payment = new Payment(client);
-  const result = await payment.get({ id: paymentId });
+  const payment = new Payment(getMercadoPagoClient());
+  const result = await payment.get({ id: paymentId }).catch((error) => {
+    throw toGatewayError(error);
+  });
 
   return {
     id: result.id?.toString(),
@@ -158,7 +221,7 @@ type TransparentPaymentData = {
  */
 export async function processTransparentPayment(params: ProcessPaymentParams) {
   const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const payment = new Payment(client);
+  const payment = new Payment(getMercadoPagoClient());
 
   // Divide o nome em first_name e last_name
   const nameParts = params.payer.name.trim().split(/\s+/);
@@ -220,12 +283,16 @@ export async function processTransparentPayment(params: ProcessPaymentParams) {
     }
   }
 
-  const result = await payment.create({
-    body: paymentData,
-    requestOptions: {
-      idempotencyKey: params.orderId,
-    },
-  });
+  const result = await payment
+    .create({
+      body: paymentData,
+      requestOptions: {
+        idempotencyKey: params.orderId,
+      },
+    })
+    .catch((error) => {
+      throw toGatewayError(error);
+    });
 
   // Detalhes do Pix
   let pixCopiaECola = null;

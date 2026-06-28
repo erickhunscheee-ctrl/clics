@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkoutSchema } from "@/lib/validators/checkout";
-import { processTransparentPayment, mapPaymentStatus } from "@/lib/mercadopago";
+import {
+  MercadoPagoConfigError,
+  MercadoPagoGatewayError,
+  processTransparentPayment,
+  mapPaymentStatus,
+} from "@/lib/mercadopago";
 import { generateAccessToken } from "@/lib/tokens";
 import { requireUser } from "@/lib/auth";
 import { calculatePromotionTotal } from "@/lib/promotions";
+
+function isAuthError(error: unknown) {
+  return error instanceof Error && error.message === "Nao autenticado";
+}
 
 export async function POST(request: Request) {
   try {
@@ -153,6 +162,17 @@ export async function POST(request: Request) {
       installments,
       paymentMethodId,
       issuerId,
+    }).catch(async (error) => {
+      await prisma.order
+        .update({
+          where: { id: order.id },
+          data: { status: "FAILED" },
+        })
+        .catch((updateError) => {
+          console.error("Erro ao marcar pedido como falho:", updateError);
+        });
+
+      throw error;
     });
 
     const mappedStatus = mapPaymentStatus(paymentResult.status || "pending");
@@ -177,16 +197,32 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Erro no processamento do checkout:", error);
-    const message = error instanceof Error ? error.message : "";
+
+    if (isAuthError(error)) {
+      return NextResponse.json(
+        { message: "Entre na sua conta para finalizar a compra." },
+        { status: 401 }
+      );
+    }
+
+    if (error instanceof MercadoPagoConfigError) {
+      return NextResponse.json(
+        { message: "Mercado Pago nao esta configurado no servidor." },
+        { status: 503 }
+      );
+    }
+
+    if (error instanceof MercadoPagoGatewayError) {
+      const status = error.status && error.status >= 400 && error.status < 500 ? 400 : 502;
+      return NextResponse.json(
+        { message: "O Mercado Pago recusou o processamento. Confira os dados e tente novamente." },
+        { status }
+      );
+    }
 
     return NextResponse.json(
-      {
-        message:
-          message === "Não autenticado"
-            ? "Entre na sua conta para finalizar a compra."
-            : "Erro interno do servidor ao processar o pagamento.",
-      },
-      { status: message === "Não autenticado" ? 401 : 500 }
+      { message: "Erro interno do servidor ao processar o pagamento." },
+      { status: 500 }
     );
   }
 }
