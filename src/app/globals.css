@@ -31,3 +31,98 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
+
+.dashboard-dark {
+  --dash-bg: #030a1f;
+  --dash-navy: #061337;
+  --dash-surface: rgba(7, 19, 49, 0.76);
+  --dash-surface-strong: rgba(8, 23, 58, 0.92);
+  --dash-surface-soft: rgba(246, 248, 252, 0.055);
+  --dash-border: rgba(148, 163, 184, 0.16);
+  --dash-border-strong: rgba(21, 155, 239, 0.24);
+  --dash-muted: #94a3b8;
+  --dash-blue: #159bef;
+  --dash-purple: #7b3ff2;
+
+  min-height: 100dvh;
+  color: white;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(21, 155, 239, 0.18), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(123, 63, 242, 0.16), transparent 26rem),
+    linear-gradient(135deg, #030a1f 0%, #061337 46%, #09122b 100%);
+}
+
+.dashboard-dark [class*="bg-zinc-950"] {
+  background-color: rgba(3, 10, 31, 0.88) !important;
+}
+
+.dashboard-dark [class*="bg-zinc-900"] {
+  background-color: var(--dash-surface) !important;
+}
+
+.dashboard-dark [class*="bg-zinc-800"] {
+  background-color: rgba(21, 155, 239, 0.1) !important;
+}
+
+.dashboard-dark [class*="border-zinc-900"],
+.dashboard-dark [class*="border-zinc-800"],
+.dashboard-dark [class*="border-zinc-700"] {
+  border-color: var(--dash-border) !important;
+}
+
+.dashboard-dark [class*="text-zinc-500"] {
+  color: rgba(148, 163, 184, 0.68) !important;
+}
+
+.dashboard-dark [class*="text-zinc-400"] {
+  color: var(--dash-muted) !important;
+}
+
+.dashboard-dark [class*="text-violet-400"],
+.dashboard-dark [class*="text-violet-300"] {
+  color: #8bd2ff !important;
+}
+
+.dashboard-dark [class*="bg-violet-600"],
+.dashboard-dark [class*="from-violet-600"],
+.dashboard-dark [class*="from-violet-500"] {
+  background: var(--gradient-brand) !important;
+}
+
+.dashboard-dark [class*="shadow-violet"] {
+  box-shadow: 0 18px 42px rgba(21, 155, 239, 0.22) !important;
+}
+
+.dashboard-dark [class*="rounded-2xl"],
+.dashboard-dark [class*="rounded-3xl"] {
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-dark input,
+.dashboard-dark textarea,
+.dashboard-dark select {
+  background-color: rgba(3, 10, 31, 0.82) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: white !important;
+}
+
+.dashboard-dark input:focus,
+.dashboard-dark textarea:focus,
+.dashboard-dark select:focus {
+  border-color: var(--dash-blue) !important;
+  box-shadow: 0 0 0 4px rgba(21, 155, 239, 0.12);
+}
+
+.dashboard-dark table thead {
+  background: rgba(246, 248, 252, 0.035);
+}
+
+.dashboard-dark table tbody tr:hover {
+  background: rgba(21, 155, 239, 0.045) !important;
+}
+
+.dashboard-dark .dashboard-surface {
+  background: linear-gradient(180deg, rgba(8, 23, 58, 0.88), rgba(4, 12, 32, 0.9));
+  border: 1px solid var(--dash-border);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
+}

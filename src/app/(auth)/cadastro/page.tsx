@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowLeft,
   ArrowRight,
   Camera,
   CheckCircle2,
@@ -159,9 +160,9 @@ export default function RegisterPage() {
           <Link
             href="/"
             aria-label="Voltar"
-            className="mb-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-base font-black leading-none text-[#061337] shadow-[0_2px_12px_rgba(6,19,55,0.06)] transition hover:-translate-y-0.5 hover:border-[#159BEF]/40 hover:text-[#159BEF] md:mb-5 md:h-9 md:w-9 md:text-lg"
+            className="mb-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-[#061337] shadow-[0_2px_12px_rgba(6,19,55,0.06)] transition hover:-translate-y-0.5 hover:border-[#159BEF]/40 hover:text-[#159BEF] md:mb-5 md:h-9 md:w-9"
           >
-            &lt;
+            <ArrowLeft size={17} />
           </Link>
 
           <div className="mb-5 text-center md:hidden">

@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Camera, LayoutDashboard, FolderKanban, ShoppingBag, LogOut, Menu, X } from "lucide-react";
+import {
+  FolderKanban,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  X,
+} from "lucide-react";
 
 interface SidebarProps {
   user: {
@@ -22,7 +30,7 @@ export function Sidebar({ user }: SidebarProps) {
 
   const menuItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Meus Álbuns", href: "/dashboard/albuns", icon: FolderKanban },
+    { label: "Meus Albuns", href: "/dashboard/albuns", icon: FolderKanban },
     { label: "Vendas e Pedidos", href: "/dashboard/pedidos", icon: ShoppingBag },
   ];
 
@@ -34,41 +42,47 @@ export function Sidebar({ user }: SidebarProps) {
 
   return (
     <>
-      {/* Botão Mobile */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-white hover:bg-zinc-800 transition-colors"
+        className="fixed left-4 top-4 z-50 rounded-2xl border border-white/10 bg-[#061337]/90 p-2 text-white shadow-[0_12px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-colors hover:border-[#159BEF]/40 lg:hidden"
+        aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
       >
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Overlay Mobile */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-zinc-950 border-r border-zinc-905 flex flex-col justify-between transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-40 flex h-screen w-64 flex-col justify-between border-r border-white/10 bg-[#061337]/92 shadow-[20px_0_70px_rgba(0,0,0,0.28)] backdrop-blur-2xl transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div>
-          {/* Logo */}
-          <div className="h-20 flex items-center gap-3 px-6 border-b border-zinc-900">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Camera size={20} className="text-white" />
+          <div className="flex h-24 items-center gap-3 border-b border-white/10 px-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_16px_42px_rgba(21,155,239,0.24)]">
+              <Image
+                src="/icone_clics.png"
+                alt="CLICS"
+                width={42}
+                height={42}
+                className="h-10 w-10 object-contain"
+                priority
+              />
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-              Álbum Pro
-            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-black leading-none text-white">CLICS</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
+                Fotografo
+              </p>
+            </div>
           </div>
 
-          {/* Menu */}
-          <nav className="p-4 space-y-2">
+          <nav className="space-y-2 p-4">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -78,13 +92,21 @@ export function Sidebar({ user }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
                     isActive
-                      ? "bg-violet-600/10 text-violet-400 border border-violet-500/20"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-900/50 border border-transparent"
+                      ? "border-[#159BEF]/30 bg-white/10 text-white shadow-[0_12px_28px_rgba(21,155,239,0.12)]"
+                      : "border-transparent text-white/58 hover:border-white/10 hover:bg-white/5 hover:text-white"
                   }`}
                 >
-                  <Icon size={18} />
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+                      isActive
+                        ? "bg-[linear-gradient(135deg,#159BEF,#7B3FF2)] text-white"
+                        : "bg-white/5 text-white/60"
+                    }`}
+                  >
+                    <Icon size={16} />
+                  </span>
                   {item.label}
                 </Link>
               );
@@ -92,29 +114,31 @@ export function Sidebar({ user }: SidebarProps) {
           </nav>
         </div>
 
-        {/* User Info & Logout */}
-        <div className="p-4 border-t border-zinc-900 space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="h-10 w-10 rounded-full border border-zinc-800"
-              />
-            ) : (
-              <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-violet-400 text-sm">
-                {user.name.charAt(0).toUpperCase()}
+        <div className="space-y-4 border-t border-white/10 p-4">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center gap-3">
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="h-11 w-11 rounded-2xl border border-white/10 object-cover"
+                />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#159BEF,#7B3FF2)] text-sm font-black text-white">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+                <p className="truncate text-xs text-white/45">{user.email}</p>
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-              <p className="text-xs text-zinc-500 truncate">{user.email}</p>
             </div>
           </div>
 
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 transition-all"
+            className="flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-bold text-red-300 transition-all hover:border-red-400/20 hover:bg-red-500/10 hover:text-red-200"
           >
             <LogOut size={18} />
             Sair da Conta
