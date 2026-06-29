@@ -252,7 +252,7 @@ export function ProfileBottomSheet() {
                   Entrar na conta <ArrowRight size={16} />
                 </Link>
                 <Link
-                  href="/register"
+                  href="/cadastro"
                   onClick={handleClose}
                   className="w-full py-3.5 rounded-2xl text-sm font-bold text-[#061337] border-2 border-slate-200 flex items-center justify-center gap-2 hover:border-slate-300 transition-colors bg-white"
                 >
