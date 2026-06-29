@@ -1,10 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Prisma, type OrderStatus } from "@prisma/client";
 import {
   AlertTriangle,
   CalendarDays,
+  CheckCircle2,
   CreditCard,
   Download,
+  Eye,
   ExternalLink,
   FileText,
   Image as ImageIcon,
@@ -74,6 +77,8 @@ type OrderWithDetails = Prisma.OrderGetPayload<{
     };
   };
 }>;
+
+type OrderPhotoItem = OrderWithDetails["items"][number];
 
 const statusConfig: Record<OrderStatus, { label: string; className: string }> = {
   PENDING: {
@@ -219,6 +224,47 @@ function SummaryCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function SoldPhotoCard({ item }: { item: OrderPhotoItem }) {
+  return (
+    <a
+      href={item.photo.previewUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="group grid min-w-0 grid-cols-[7rem_1fr] gap-3 rounded-2xl border border-white/10 bg-[#030a1f]/70 p-3 transition hover:border-[#159BEF]/35 hover:bg-[#071943]/80 sm:grid-cols-[8rem_1fr] lg:grid-cols-1 lg:p-4"
+    >
+      <div className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#061337] sm:aspect-[4/3] lg:aspect-[4/3]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.photo.previewUrl}
+          alt={item.photo.originalFileName}
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+        />
+        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/58 px-2 py-1 text-[11px] font-bold text-white backdrop-blur">
+          <Eye size={12} />
+          Abrir
+        </span>
+      </div>
+      <div className="min-w-0 self-center lg:self-auto">
+        <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
+          {item.photo.originalFileName}
+        </p>
+        <p className="mt-1 truncate text-xs text-[#94a3b8]">
+          {item.photo.folder?.name || item.photo.album.title || "Sem pasta"}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-black text-emerald-200">
+            {formatCurrency(item.price)}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-bold text-[#94a3b8]">
+            <Download size={12} />
+            {item.downloadCount}x
+          </span>
+        </div>
+      </div>
+    </a>
   );
 }
 
@@ -409,6 +455,9 @@ export default async function OrdersAdminPage({
     (order) => order.status === "PENDING" && order.createdAt < staleCutoff
   ).length;
   const totalPhotos = filteredOrders.reduce((acc, order) => acc + order.items.length, 0);
+  const soldPhotos = filteredOrders
+    .filter((order) => order.status === "PAID")
+    .reduce((acc, order) => acc + order.items.length, 0);
 
   const allPending = allOrders.filter((order) => order.status === "PENDING").length;
   const pendingPix = allOrders.filter(
@@ -431,16 +480,28 @@ export default async function OrdersAdminPage({
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-400">
-            Administrativo
-          </p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white">
-            Pagamentos e pedidos
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-            Consulte pagamentos por usuario, metodo, status e veja as fotos vinculadas a cada compra.
-          </p>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex h-16 w-36 items-center rounded-2xl border border-white/10 bg-white/[0.07] px-4 shadow-[0_18px_46px_rgba(0,0,0,0.18)]">
+            <Image
+              src="/logo_clics_branco.png"
+              alt="CLICS"
+              width={136}
+              height={50}
+              className="h-auto w-full object-contain"
+              priority
+            />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase text-violet-400">
+              Administrativo
+            </p>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white">
+              Pagamentos e fotos vendidas
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+              Consulte pagamentos por usuario, metodo e status, com as fotos compradas em destaque.
+            </p>
+          </div>
         </div>
         <Link
           href="/dashboard/pedidos"
@@ -470,8 +531,8 @@ export default async function OrdersAdminPage({
           tone="bg-amber-500/10 text-amber-300"
         />
         <SummaryCard
-          label="Fotos no filtro"
-          value={String(totalPhotos)}
+          label="Fotos vendidas"
+          value={String(soldPhotos)}
           icon={ImageIcon}
           tone="bg-zinc-800 text-zinc-300"
         />
@@ -575,8 +636,9 @@ export default async function OrdersAdminPage({
         </div>
 
         <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 text-xs leading-relaxed text-zinc-400">
-          Carrinhos antes de clicar em Pix/cartao ficam apenas no navegador do comprador. Aqui aparecem
-          os carrinhos que chegaram ao checkout e viraram pedido/pagamento no banco.
+          Este filtro encontrou {filteredOrders.length} pedido(s), {totalPhotos} foto(s) vinculada(s)
+          e {soldPhotos} foto(s) vendida(s) em pagamentos aprovados. Carrinhos antes de clicar em
+          Pix/cartao ficam apenas no navegador do comprador; aqui aparecem os que chegaram ao checkout.
         </div>
       </section>
 
@@ -609,39 +671,43 @@ export default async function OrdersAdminPage({
             return (
               <article
                 key={order.id}
-                className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40"
+                className="overflow-hidden rounded-3xl border border-white/[0.12] bg-[#061337]/70 shadow-[0_24px_70px_rgba(0,0,0,0.26)]"
               >
-                <div className="grid gap-5 border-b border-zinc-800 p-5 xl:grid-cols-[1.35fr_0.85fr_0.8fr]">
+                <div className="grid gap-4 border-b border-white/10 bg-white/5 p-4 sm:p-5 xl:grid-cols-[1.25fr_0.9fr_0.9fr]">
                   <div className="min-w-0 space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                       <StatusBadge status={order.status} />
                       <MethodBadge method={method} />
-                      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                      <span className="text-xs font-semibold uppercase text-zinc-500">
                         Pedido #{order.orderNumber}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold text-zinc-300">
+                        <ImageIcon size={12} />
+                        {order.items.length} foto(s)
                       </span>
                     </div>
 
                     <div>
                       <h2 className="text-lg font-bold text-white">{order.customerName}</h2>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-400">
-                        <span className="inline-flex items-center gap-1.5">
+                      <div className="mt-3 grid gap-2 text-xs text-zinc-400 sm:grid-cols-2">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-white/10 bg-black/10 px-3 py-2">
                           <Mail size={13} />
-                          {order.customerEmail}
+                          <span className="truncate">{order.customerEmail}</span>
                         </span>
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-white/10 bg-black/10 px-3 py-2">
                           <Phone size={13} />
-                          {order.customerPhone || "Telefone nao informado"}
+                          <span className="truncate">{order.customerPhone || "Telefone nao informado"}</span>
                         </span>
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-white/10 bg-black/10 px-3 py-2 sm:col-span-2">
                           <CalendarDays size={13} />
-                          {formatDate(order.createdAt)}
+                          <span>{formatDate(order.createdAt)}</span>
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-950/45 p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  <div className="space-y-2 rounded-2xl border border-white/10 bg-[#030a1f]/60 p-4">
+                    <p className="text-[10px] font-bold uppercase text-zinc-500">
                       Album e responsavel
                     </p>
                     <Link
@@ -657,8 +723,9 @@ export default async function OrdersAdminPage({
                     </p>
                   </div>
 
-                  <div className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-950/45 p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  <div className="space-y-3 rounded-2xl border border-emerald-400/[0.18] bg-emerald-400/[0.08] p-4">
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-emerald-200/80">
+                      <CheckCircle2 size={13} />
                       Pagamento
                     </p>
                     <p className="text-2xl font-black text-emerald-300">
@@ -675,59 +742,35 @@ export default async function OrdersAdminPage({
                   </div>
                 </div>
 
-                <div className="grid gap-5 p-5 xl:grid-cols-[1fr_18rem]">
+                <div className="grid gap-5 p-4 sm:p-5 xl:grid-cols-[1fr_18rem]">
                   <div className="min-w-0">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-bold text-white">
-                        Fotos vinculadas ({order.items.length})
-                      </h3>
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-white">
+                          {order.status === "PAID" ? "Fotos vendidas" : "Fotos no pedido"} ({order.items.length})
+                        </h3>
+                        <p className="mt-1 text-xs text-zinc-400">
+                          Toque ou clique na foto para abrir a previa em tamanho maior.
+                        </p>
+                      </div>
                       <Link
                         href={`/pedido/${order.accessToken}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-violet-300 hover:text-violet-200"
                       >
                         Ver pedido publico
                         <ExternalLink size={12} />
                       </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
                       {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex min-w-0 gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/45 p-3"
-                        >
-                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={item.photo.previewUrl}
-                              alt={item.photo.originalFileName}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-white">
-                              {item.photo.originalFileName}
-                            </p>
-                            <p className="mt-1 truncate text-xs text-zinc-500">
-                              {item.photo.folder?.name || "Sem pasta"}
-                            </p>
-                            <div className="mt-2 flex items-center justify-between gap-2 text-xs">
-                              <span className="font-bold text-zinc-300">
-                                {formatCurrency(item.price)}
-                              </span>
-                              <span className="inline-flex items-center gap-1 text-zinc-500">
-                                <Download size={12} />
-                                {item.downloadCount}x
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                        <SoldPhotoCard key={item.id} item={item} />
                       ))}
                     </div>
                   </div>
 
-                  <aside className="rounded-2xl border border-zinc-800 bg-zinc-950/45 p-4">
+                  <aside className="rounded-2xl border border-white/10 bg-[#030a1f]/60 p-4">
                     <h3 className="text-sm font-bold text-white">Logs recentes</h3>
                     {order.paymentLogs.length === 0 ? (
                       <p className="mt-3 text-xs text-zinc-500">

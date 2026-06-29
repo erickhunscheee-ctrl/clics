@@ -63,21 +63,18 @@ export function Sidebar({ user }: SidebarProps) {
         }`}
       >
         <div>
-          <div className="flex h-24 items-center gap-3 border-b border-white/10 px-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_16px_42px_rgba(21,155,239,0.24)]">
+          <div className="flex h-24 items-center border-b border-white/10 px-6">
+            <div className="min-w-0">
               <Image
-                src="/icone_clics.png"
+                src="/logo_clics_branco.png"
                 alt="CLICS"
-                width={42}
-                height={42}
-                className="h-10 w-10 object-contain"
+                width={148}
+                height={54}
+                className="h-auto w-32 object-contain"
                 priority
               />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-black leading-none text-white">CLICS</p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
-                Fotografo
+              <p className="mt-2 text-[10px] font-bold uppercase text-white/45">
+                Area do fotografo
               </p>
             </div>
           </div>
