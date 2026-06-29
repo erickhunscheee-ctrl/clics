@@ -186,6 +186,29 @@ export async function POST(request: Request) {
       },
     });
 
+    await prisma.paymentLog.create({
+      data: {
+        orderId: order.id,
+        eventType: `checkout_${paymentMethod.toLowerCase()}_${mappedStatus.toLowerCase()}`,
+        externalId: paymentResult.id || null,
+        payload: {
+          paymentMethod,
+          paymentResult: {
+            id: paymentResult.id,
+            status: paymentResult.status,
+            statusDetail: paymentResult.statusDetail,
+            paymentMethodId: paymentResult.paymentMethodId,
+            paymentTypeId: paymentResult.paymentTypeId,
+          },
+          request: {
+            installments: installments || null,
+            paymentMethodId: paymentMethodId || null,
+            issuerId: issuerId || null,
+          },
+        },
+      },
+    });
+
     return NextResponse.json({
       orderId: order.id,
       accessToken: order.accessToken,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -13,7 +12,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -35,7 +33,7 @@ export default function RegisterPage() {
         data: {
           full_name: name,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?role=photographer`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -57,7 +55,6 @@ export default function RegisterPage() {
             supabaseUserId: data.user.id,
             name,
             email,
-            role: "PHOTOGRAPHER",
           }),
         });
 
@@ -67,8 +64,12 @@ export default function RegisterPage() {
         }
 
         setSuccess(true);
-      } catch (err: any) {
-        setError(err.message || "Conta criada no Auth, mas falhou ao salvar no banco. Entre em contato.");
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Conta criada no Auth, mas falhou ao salvar no banco. Entre em contato.";
+        setError(message);
       }
     }
 
@@ -80,7 +81,7 @@ export default function RegisterPage() {
     const { error: googleError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?role=photographer`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -98,7 +99,7 @@ export default function RegisterPage() {
             Criar Conta
           </h1>
           <p className="text-zinc-400 mt-2 text-sm">
-            Comece a publicar seus álbuns e vender hoje mesmo
+            Crie sua conta para comprar, favoritar e baixar suas fotos
           </p>
         </div>
 
@@ -133,7 +134,7 @@ export default function RegisterPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome profissional"
+                  placeholder="Seu nome completo"
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
                 />
               </div>
@@ -185,7 +186,7 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-violet-500/25 disabled:opacity-50"
               >
-                {loading ? "Cadastrando..." : "Criar Minha Conta"}
+                {loading ? "Cadastrando..." : "Criar minha conta"}
               </button>
             </form>
 
@@ -208,7 +209,7 @@ export default function RegisterPage() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
               </svg>
-              Criar com Google
+              Criar conta com Google
             </button>
 
             <p className="text-center text-zinc-500 text-xs mt-6">

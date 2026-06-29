@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { supabaseUserId, name, email, role } = await request.json();
+    const { supabaseUserId, name, email } = await request.json();
 
     if (!supabaseUserId || !email || !name) {
       return NextResponse.json(
@@ -12,20 +12,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const userRole = role === "PHOTOGRAPHER" ? "PHOTOGRAPHER" : "BUYER";
-
     const user = await prisma.user.upsert({
       where: { supabaseUserId },
       update: {
         name,
         email,
-        role: userRole,
+        role: "BUYER",
       },
       create: {
         supabaseUserId,
         name,
         email,
-        role: userRole,
+        role: "BUYER",
       },
     });
 

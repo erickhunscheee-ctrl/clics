@@ -306,6 +306,8 @@ export async function processTransparentPayment(params: ProcessPaymentParams) {
     id: result.id?.toString(),
     status: result.status,
     statusDetail: result.status_detail,
+    paymentMethodId: result.payment_method_id,
+    paymentTypeId: result.payment_type_id,
     pixCopiaECola,
     pixQrCodeBase64,
   };
