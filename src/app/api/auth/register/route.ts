@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { supabaseUserId, name, email } = await request.json();
+    const { supabaseUserId, name, email, phone } = await request.json();
+    const normalizedPhone =
+      typeof phone === "string" && phone.trim() ? phone.trim() : null;
 
     if (!supabaseUserId || !email || !name) {
       return NextResponse.json(
@@ -17,12 +19,14 @@ export async function POST(request: Request) {
       update: {
         name,
         email,
+        phone: normalizedPhone,
         role: "BUYER",
       },
       create: {
         supabaseUserId,
         name,
         email,
+        phone: normalizedPhone,
         role: "BUYER",
       },
     });

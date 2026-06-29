@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getMetadataPhone } from "@/lib/user-metadata";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
 
       if (data?.user) {
         const supabaseUser = data.user;
+        const phone = getMetadataPhone(supabaseUser.user_metadata);
 
         // Sincroniza o usuário com o banco de dados via Prisma
         await prisma.user.upsert({
@@ -26,6 +28,7 @@ export async function GET(request: Request) {
           update: {
             name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+            ...(phone ? { phone } : {}),
             role: "BUYER",
           },
           create: {
@@ -33,6 +36,7 @@ export async function GET(request: Request) {
             name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "Fotógrafo",
             email: supabaseUser.email!,
             avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+            phone,
             role: "BUYER",
           },
         });

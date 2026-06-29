@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getMetadataPhone } from "@/lib/user-metadata";
 
 /**
  * Returns the authenticated user synced with Prisma, or null when there is no
@@ -23,6 +24,7 @@ export async function getCurrentUser() {
     supabaseUser.user_metadata?.name ||
     supabaseUser.email?.split("@")[0] ||
     "Fotografo";
+  const phone = getMetadataPhone(supabaseUser.user_metadata);
 
   const user = await prisma.user
     .upsert({
@@ -30,12 +32,14 @@ export async function getCurrentUser() {
       update: {
         name,
         avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+        ...(phone ? { phone } : {}),
       },
       create: {
         supabaseUserId: supabaseUser.id,
         name,
         email: supabaseUser.email!,
         avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+        phone,
         role: "BUYER",
       },
     })
