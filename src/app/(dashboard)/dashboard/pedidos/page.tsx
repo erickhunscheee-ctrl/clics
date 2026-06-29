@@ -17,7 +17,6 @@ import {
   Receipt,
   Search,
   SearchX,
-  ShoppingCart,
   SlidersHorizontal,
   User,
   FilterX,
@@ -120,12 +119,12 @@ const methodConfig: Record<
     icon: QrCode,
   },
   CREDIT_CARD: {
-    label: "Cart„o",
+    label: "Cart√£o",
     className: "bg-indigo-500/10 text-indigo-300 border-indigo-500/25",
     icon: CreditCard,
   },
   UNKNOWN: {
-    label: "N„o identificado",
+    label: "N√£o identificado",
     className: "bg-zinc-800/60 text-zinc-400 border-zinc-700/50",
     icon: FileText,
   },
@@ -523,7 +522,7 @@ export default async function OrdersAdminPage({
               Pagamentos e fotos vendidas
             </h1>
             <p className="mt-1 text-xs text-zinc-500">
-              Consulte pagamentos por usu·rio, mÈtodo e status.
+              Consulte pagamentos por usu√°rio, m√©todo e status.
             </p>
           </div>
         </div>
@@ -543,7 +542,7 @@ export default async function OrdersAdminPage({
         <SummaryCard
           label="Faturamento pago"
           value={formatCurrency(paidRevenue)}
-          sub={`ticket mÈdio ${formatCurrency(ticketMedio)}`}
+          sub={`ticket m√©dio ${formatCurrency(ticketMedio)}`}
           icon={TrendingUp}
           iconClass="bg-emerald-500/10 text-emerald-400"
           accent
@@ -558,7 +557,7 @@ export default async function OrdersAdminPage({
         <SummaryCard
           label="Pendentes"
           value={String(pendingOrders.length)}
-          sub={stalePendingOrders.length > 0 ? `${stalePendingOrders.length} h· +30 min` : "todos recentes"}
+          sub={stalePendingOrders.length > 0 ? `${stalePendingOrders.length} h√° +30 min` : "todos recentes"}
           icon={Clock}
           iconClass="bg-amber-500/10 text-amber-400"
         />
@@ -616,7 +615,7 @@ export default async function OrdersAdminPage({
 
             {/* Method */}
             <label className="space-y-1.5">
-              <span className="block text-[10px] font-semibold uppercase tracking-widest text-zinc-600">MÈtodo</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-widest text-zinc-600">M√©todo</span>
               <select
                 name="method"
                 defaultValue={methodFilter}
@@ -624,8 +623,8 @@ export default async function OrdersAdminPage({
               >
                 <option value="all">Todos</option>
                 <option value="pix">Pix</option>
-                <option value="card">Cart„o</option>
-                <option value="unknown">N„o identificado</option>
+                <option value="card">Cart√£o</option>
+                <option value="unknown">N√£o identificado</option>
               </select>
             </label>
 
@@ -665,7 +664,7 @@ export default async function OrdersAdminPage({
             />
             <FilterChip
               href={buildQuery({ ...baseFilterValues, method: "card", consult: "pending" })}
-              label={`Cart„o pendente (${pendingCard})`}
+              label={`Cart√£o pendente (${pendingCard})`}
               active={consultation === "pending" && methodFilter === "card"}
               variant="warning"
             />
@@ -694,7 +693,7 @@ export default async function OrdersAdminPage({
             <span className="font-semibold text-zinc-300">{filteredOrders.length} pedido(s)</span>,{" "}
             <span className="font-semibold text-zinc-300">{totalPhotos} foto(s) vinculada(s)</span> e{" "}
             <span className="font-semibold text-zinc-300">{soldPhotos} foto(s) vendida(s)</span> em pagamentos aprovados.
-            Carrinhos antes de clicar em Pix/cart„o ficam apenas no navegador do comprador; aqui aparecem os que chegaram ao checkout.
+            Carrinhos antes de clicar em Pix/cart√£o ficam apenas no navegador do comprador; aqui aparecem os que chegaram ao checkout.
           </p>
         </div>
       </section>
@@ -705,7 +704,7 @@ export default async function OrdersAdminPage({
           <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-400" />
           <p>
             <span className="font-bold">
-              {stalePendingOrders.length} pedido(s) pendente(s) h· mais de 30 minutos
+              {stalePendingOrders.length} pedido(s) pendente(s) h√° mais de 30 minutos
             </span>{" "}
             no filtro atual. Vale conferir se o comprador abandonou o Pix, se o webhook atrasou ou se houve recusa no gateway.
           </p>
@@ -773,7 +772,7 @@ export default async function OrdersAdminPage({
                       </span>
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-zinc-400">
                         <Phone size={11} className="shrink-0 text-zinc-600" />
-                        <span className="truncate">{order.customerPhone || "N„o informado"}</span>
+                        <span className="truncate">{order.customerPhone || "N√£o informado"}</span>
                       </span>
                     </div>
                   </div>
@@ -781,7 +780,7 @@ export default async function OrdersAdminPage({
                   {/* Col 2 ? album */}
                   <div className="bg-zinc-950/70 p-4 sm:p-5">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
-                      ¡lbum e respons·vel
+                      √Ålbum e respons√°vel
                     </p>
                     <Link
                       href={`/dashboard/albuns/${order.album.id}`}
@@ -793,7 +792,7 @@ export default async function OrdersAdminPage({
                     <p className="mt-2 flex items-center gap-1.5 text-[11px] text-zinc-500">
                       <User size={11} />
                       <span className="truncate">
-                        {order.album.photographer.name} ∑ {order.album.photographer.email}
+                        {order.album.photographer.name} ¬∑ {order.album.photographer.email}
                       </span>
                     </p>
                   </div>
@@ -809,7 +808,7 @@ export default async function OrdersAdminPage({
                     </p>
                     <div className="mt-2.5 space-y-1 text-[10px] text-zinc-600">
                       <p className="truncate font-mono">
-                        MP: {order.mercadoPagoPaymentId || "n„o vinculado"}
+                        MP: {order.mercadoPagoPaymentId || "n√£o vinculado"}
                       </p>
                       <p className={`truncate font-medium ${
                         latestLog?.eventType?.includes("APPROVED") ? "text-emerald-500" :
@@ -833,7 +832,7 @@ export default async function OrdersAdminPage({
                           <span className="font-normal text-zinc-500">({order.items.length})</span>
                         </h3>
                         <p className="mt-0.5 text-[11px] text-zinc-600">
-                          Toque na foto para abrir a prÈvia em tamanho maior.
+                          Toque na foto para abrir a pr√©via em tamanho maior.
                         </p>
                       </div>
                       <Link
@@ -841,7 +840,7 @@ export default async function OrdersAdminPage({
                         target="_blank"
                         className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-violet-400 transition hover:text-violet-300 hover:border-violet-500/30"
                       >
-                        Ver pedido p˙blico
+                        Ver pedido p√∫blico
                         <ExternalLink size={11} />
                       </Link>
                     </div>
@@ -900,7 +899,7 @@ export default async function OrdersAdminPage({
             Logs de pagamento sem pedido vinculado ({orphanPaymentLogs.length})
           </h2>
           <p className="mt-1 text-[11px] text-zinc-500">
-            Esses logs chegaram via webhook mas n„o foram associados a nenhum pedido. Pode ser uma condiÁ„o de corrida ou pagamento fora do fluxo normal.
+            Esses logs chegaram via webhook mas n√£o foram associados a nenhum pedido. Pode ser uma condi√ß√£o de corrida ou pagamento fora do fluxo normal.
           </p>
           <div className="mt-4 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
             {orphanPaymentLogs.map((log) => (
