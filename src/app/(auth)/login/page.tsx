@@ -177,9 +177,17 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Senha
-              </label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Senha
+                </label>
+                <Link
+                  href="/esqueci-senha"
+                  className="text-xs font-bold text-[#7B3FF2] underline decoration-[#7B3FF2]/30 underline-offset-4 transition hover:text-[#159BEF]"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock
                   size={16}
