@@ -8,11 +8,13 @@ import {
   useRef,
   useEffect,
   ReactNode,
+  Suspense,
 } from "react";
 import Image from "next/image";
+import { usePathname, useSearchParams } from "next/navigation";
 
 interface LoadingContextType {
-  startLoading: (durationMs?: number) => void;
+  startLoading: () => void;
   stopLoading: () => void;
   withLoading: <T>(fn: () => Promise<T>) => Promise<T>;
 }
@@ -25,46 +27,70 @@ export function useLoading() {
   return ctx;
 }
 
+/**
+ * Inner component that watches route changes to stop loading.
+ * Must be inside Suspense because useSearchParams() requires it.
+ */
+function NavigationWatcher({ onNavigationComplete }: { onNavigationComplete: () => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the very first render — we only want to react to changes
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // Route changed → navigation is done → stop loading
+    onNavigationComplete();
+  }, [pathname, searchParams, onNavigationComplete]);
+
+  return null;
+}
+
 export function LoadingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Safety-net timeout ref: if route never changes (e.g. same-page button),
+  // we still stop the loader after a maximum wait.
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearLoadingTimeout = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+  const clearSafetyTimeout = useCallback(() => {
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
     }
   }, []);
 
   const stopLoading = useCallback(() => {
-    clearLoadingTimeout();
+    clearSafetyTimeout();
     setIsLoading(false);
-  }, [clearLoadingTimeout]);
+  }, [clearSafetyTimeout]);
 
-  const startLoading = useCallback(
-    (durationMs = 700) => {
-      clearLoadingTimeout();
+  const startLoading = useCallback(() => {
+    clearSafetyTimeout();
+    setIsLoading(true);
+    // Safety net: never keep loading for more than 8 seconds
+    safetyTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      safetyTimeoutRef.current = null;
+    }, 8000);
+  }, [clearSafetyTimeout]);
+
+  const withLoading = useCallback(
+    async <T,>(fn: () => Promise<T>): Promise<T> => {
+      clearSafetyTimeout();
       setIsLoading(true);
-      if (durationMs > 0) {
-        timeoutRef.current = setTimeout(() => {
-          setIsLoading(false);
-          timeoutRef.current = null;
-        }, durationMs);
+      try {
+        return await fn();
+      } finally {
+        stopLoading();
       }
     },
-    [clearLoadingTimeout]
+    [clearSafetyTimeout, stopLoading]
   );
 
-  const withLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
-    clearLoadingTimeout();
-    setIsLoading(true);
-    try {
-      return await fn();
-    } finally {
-      stopLoading();
-    }
-  }, [clearLoadingTimeout, stopLoading]);
-
+  // Listen for clicks on navigable elements to start loading
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target;
@@ -77,7 +103,25 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
       if (actionable.matches("[disabled], [aria-disabled='true']")) return;
       if (actionable.closest("[data-loading-ignore='true']")) return;
 
-      startLoading(650);
+      // Only trigger for <a> tags that have an href pointing to a different page
+      // (avoid triggering for buttons that don't navigate)
+      if (actionable.tagName === "A") {
+        const href = (actionable as HTMLAnchorElement).href;
+        const currentUrl = window.location.href;
+        // Same-page anchor or javascript: links → skip
+        if (!href || href.startsWith("javascript:") || href === currentUrl) return;
+        // Same origin navigation → start loading
+        try {
+          const url = new URL(href);
+          if (url.origin !== window.location.origin) return;
+          // Same pathname + search → skip (no real navigation will happen)
+          if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+        } catch {
+          return;
+        }
+      }
+
+      startLoading();
     };
 
     document.addEventListener("click", handleClick, { capture: true });
@@ -87,6 +131,10 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
   return (
     <LoadingContext.Provider value={{ startLoading, stopLoading, withLoading }}>
       {children}
+      {/* NavigationWatcher detects when the route actually changes and stops the loader */}
+      <Suspense fallback={null}>
+        <NavigationWatcher onNavigationComplete={stopLoading} />
+      </Suspense>
       {isLoading && <PageLoader />}
     </LoadingContext.Provider>
   );

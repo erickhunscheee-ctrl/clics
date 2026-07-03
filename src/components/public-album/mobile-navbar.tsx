@@ -125,7 +125,7 @@ export function MobileNavbar() {
     profileOpen && searchParams.get("profileTab") === "pedidos";
 
   const openSheet = (key: "albums" | "favorites" | "profile" | "purchases") => {
-    startLoading(350);
+    startLoading();
     const current =
       key === "purchases"
         ? purchasesOpen

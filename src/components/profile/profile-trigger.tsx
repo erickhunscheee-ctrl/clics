@@ -19,7 +19,7 @@ export function ProfileTrigger({
   const { startLoading } = useLoading();
 
   const openProfile = () => {
-    startLoading(350);
+    startLoading();
     const params = new URLSearchParams(window.location.search);
     params.delete("albums");
     params.delete("favorites");
