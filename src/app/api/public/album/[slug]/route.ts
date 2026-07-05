@@ -24,63 +24,42 @@ export async function GET(
       coverImageUrl: true,
       defaultPhotoPrice: true,
       status: true,
+      promotionEnabled: true,
+      promotionMinPhotos: true,
+      promotionDiscountBps: true,
       photographer: {
         select: {
           name: true,
           avatarUrl: true,
         },
       },
+      photos: {
+        where: { status: "ACTIVE" },
+        select: {
+          id: true,
+          folderId: true,
+          originalFileName: true,
+          previewUrl: true,
+          price: true,
+          width: true,
+          height: true,
+          fileSize: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      folders: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     } as const;
 
-    const album = await prisma.album
-      .findUnique({
-        where: { slug },
-        select: {
-          ...baseAlbumSelect,
-          photos: {
-            where: { status: "ACTIVE" },
-            select: {
-              id: true,
-              folderId: true,
-              originalFileName: true,
-              previewUrl: true,
-              price: true,
-              width: true,
-              height: true,
-              fileSize: true,
-            },
-            orderBy: { createdAt: "desc" },
-          },
-          folders: {
-            orderBy: { createdAt: "asc" },
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      })
-      .catch(() =>
-        prisma.album.findUnique({
-          where: { slug },
-          select: {
-            ...baseAlbumSelect,
-            photos: {
-              where: { status: "ACTIVE" },
-              select: {
-                id: true,
-                originalFileName: true,
-                previewUrl: true,
-                price: true,
-                width: true,
-                height: true,
-                fileSize: true,
-              },
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        })
-      );
+    const album = await prisma.album.findUnique({
+      where: { slug },
+      select: baseAlbumSelect,
+    });
 
     if (!album || album.status !== "PUBLISHED") {
       return NextResponse.json(
@@ -88,28 +67,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    const promotion = await prisma
-      .$queryRaw<
-        Array<{
-          promotionEnabled: boolean;
-          promotionMinPhotos: number;
-          promotionDiscountBps: number;
-        }>
-      >`
-        SELECT "promotionEnabled", "promotionMinPhotos", "promotionDiscountBps"
-        FROM "albums"
-        WHERE id = ${album.id}
-        LIMIT 1
-      `
-      .then((rows) => rows[0] ?? null)
-      .catch(() => null);
-
-    const folders = "folders" in album ? album.folders : [];
-    const photos = album.photos.map((photo) => ({
-      ...photo,
-      folderId: "folderId" in photo ? photo.folderId : null,
-    }));
 
     return NextResponse.json({
       id: album.id,
@@ -119,12 +76,12 @@ export async function GET(
       location: album.location,
       coverImageUrl: album.coverImageUrl,
       defaultPhotoPrice: album.defaultPhotoPrice,
-      promotionEnabled: promotion?.promotionEnabled ?? false,
-      promotionMinPhotos: promotion?.promotionMinPhotos ?? 0,
-      promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
+      promotionEnabled: album.promotionEnabled ?? false,
+      promotionMinPhotos: album.promotionMinPhotos ?? 0,
+      promotionDiscountBps: album.promotionDiscountBps ?? 0,
       photographer: album.photographer,
-      folders,
-      photos,
+      folders: album.folders ?? [],
+      photos: album.photos ?? [],
     });
   } catch (error: unknown) {
     console.error("Erro ao buscar album publico:", error);

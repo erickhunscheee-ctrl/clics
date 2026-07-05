@@ -30,10 +30,15 @@ export async function GET(request: Request, { params }: Params) {
         coverImageUrl: true,
         defaultPhotoPrice: true,
         status: true,
+        isFeatured: true,
+        promotionEnabled: true,
+        promotionMinPhotos: true,
+        promotionDiscountBps: true,
         photos: {
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
+            folderId: true,
             originalFileName: true,
             previewUrl: true,
             price: true,
@@ -56,44 +61,10 @@ export async function GET(request: Request, { params }: Params) {
         include: { _count: { select: { photos: true } } },
       })
       .catch(() => []);
-    const promotion = await prisma
-      .$queryRaw<Array<{
-        isFeatured: boolean;
-        promotionEnabled: boolean;
-        promotionMinPhotos: number;
-        promotionDiscountBps: number;
-      }>>`
-        SELECT
-          "isFeatured",
-          "promotionEnabled",
-          "promotionMinPhotos",
-          "promotionDiscountBps"
-        FROM "albums"
-        WHERE id = ${id}
-        LIMIT 1
-      `
-      .then((rows) => rows[0])
-      .catch(() => null);
-    const photoFolders = await prisma
-      .$queryRaw<Array<{ id: string; folderId: string | null }>>`
-        SELECT id, "folderId"
-        FROM "photos"
-        WHERE "albumId" = ${id}
-      `
-      .catch(() => []);
-    const folderByPhotoId = new Map(photoFolders.map((photo) => [photo.id, photo.folderId]));
 
     return NextResponse.json({
       ...album,
-      isFeatured: promotion?.isFeatured ?? false,
-      promotionEnabled: promotion?.promotionEnabled ?? false,
-      promotionMinPhotos: promotion?.promotionMinPhotos ?? 0,
-      promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
       folders,
-      photos: album.photos.map((photo) => ({
-        ...photo,
-        folderId: folderByPhotoId.get(photo.id) ?? null,
-      })),
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erro ao buscar album.";
