@@ -85,6 +85,60 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [albumId]);
 
+  // Comprime a imagem no navegador antes de enviar para não estourar o limite de 4.5MB da Vercel
+  const compressImageClientSide = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const MAX_PX = 2800;      // Excelente resolução para preview e garante arquivo pequeno
+      const QUALITY = 0.80;     // Qualidade visual excelente que comprime muito o tamanho físico
+      const MAX_SIZE_MB = 3.5;  // Qualquer arquivo acima de 3.5MB DEVE ser reduzido para passar na Vercel
+
+      if (file.size <= MAX_SIZE_MB * 1024 * 1024) {
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const { width, height } = img;
+
+        let targetW = width;
+        let targetH = height;
+        if (width > MAX_PX || height > MAX_PX) {
+          if (width >= height) {
+            targetW = MAX_PX;
+            targetH = Math.round((height / width) * MAX_PX);
+          } else {
+            targetH = MAX_PX;
+            targetW = Math.round((width / height) * MAX_PX);
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            const compressedName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+            resolve(new File([blob], compressedName, { type: "image/jpeg" }));
+          },
+          "image/jpeg",
+          QUALITY
+        );
+      };
+
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error(`Erro ao ler imagem ${file.name}`)); };
+      img.src = objectUrl;
+    });
+  };
+
   // Upload múltiplo de fotos - envia direto ao servidor que comprime antes do R2
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -94,26 +148,27 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
 
     for (const file of files) {
       const tempId = Math.random().toString();
-      setUploadProgress((prev) => ({ ...prev, [tempId]: 10 }));
+      setUploadProgress((prev) => ({ ...prev, [tempId]: 5 }));
 
       try {
-        // Envia o arquivo direto para o servidor via FormData
-        // O servidor comprime com Sharp antes de salvar no R2
+        // Comprime a imagem no navegador antes de transmitir (ex: 16MB -> 1.8MB)
+        const compressed = await compressImageClientSide(file);
+        setUploadProgress((prev) => ({ ...prev, [tempId]: 30 }));
+
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressed);
         if (activeFolderId && activeFolderId !== "all") {
           formData.append("folderId", activeFolderId);
         }
 
-        setUploadProgress((prev) => ({ ...prev, [tempId]: 40 }));
+        setUploadProgress((prev) => ({ ...prev, [tempId]: 50 }));
 
         const resProcess = await fetch(`/api/fotos/${albumId}/process`, {
           method: "POST",
           body: formData,
-          // Não define Content-Type: o browser define automaticamente com boundary correto
         });
 
-        setUploadProgress((prev) => ({ ...prev, [tempId]: 80 }));
+        setUploadProgress((prev) => ({ ...prev, [tempId]: 85 }));
 
         if (!resProcess.ok) {
           // Respostas de erro do proxy (413, 502, etc.) podem não ser JSON
@@ -123,7 +178,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
             errorMessage = errData.message || errorMessage;
           } catch {
             if (resProcess.status === 413) {
-              errorMessage = `${file.name} é muito grande. Envie fotos de até 30 MB.`;
+              errorMessage = `${file.name} ainda é muito grande para os limites do servidor.`;
             } else {
               errorMessage = `Erro ${resProcess.status}: ${resProcess.statusText || "Falha no servidor"}`;
             }
