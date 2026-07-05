@@ -24,8 +24,9 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
   const logoHeight = Math.round(logoWidth * logoAspectRatio);
   const logoBase64 = logoBuffer.toString("base64");
 
-  // Grid: lines every ~10% of the shortest side
-  const step = Math.round(Math.min(width, height) * 0.10);
+  // Evita divisão por zero ou loop infinito se dimensões forem inválidas
+  const minDimension = Math.min(width, height) || 100;
+  const step = Math.max(20, Math.round(minDimension * 0.10));
   const gridLines: string[] = [];
 
   // Vertical lines
