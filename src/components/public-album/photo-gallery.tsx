@@ -472,13 +472,23 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
             </button>
 
             {/* Image */}
-            <div className="relative max-h-[55vh] md:max-h-[80vh] max-w-full">
+            <div className="relative flex items-center justify-center max-h-[55vh] md:max-h-[80vh] max-w-full">
               <img
+                key={activePhoto.id}
                 src={activePhoto.previewUrl}
                 alt={activePhoto.originalFileName}
-                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
+                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none transition-opacity duration-200"
                 onContextMenu={(e) => e.preventDefault()}
               />
+              {/* Preload prev/next images invisibly to make switching instant */}
+              <div className="hidden">
+                {visiblePhotos[activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex - 1] && (
+                  <img src={visiblePhotos[activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex - 1].previewUrl} alt="prev" />
+                )}
+                {visiblePhotos[activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex + 1] && (
+                  <img src={visiblePhotos[activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex + 1].previewUrl} alt="next" />
+                )}
+              </div>
             </div>
 
             {/* Nav Next */}
