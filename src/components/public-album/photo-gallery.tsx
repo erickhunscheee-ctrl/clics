@@ -474,10 +474,9 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
             {/* Image */}
             <div className="relative flex items-center justify-center max-h-[55vh] md:max-h-[80vh] max-w-full">
               <img
-                key={activePhoto.id}
                 src={activePhoto.previewUrl}
                 alt={activePhoto.originalFileName}
-                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none transition-opacity duration-200"
+                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
                 onContextMenu={(e) => e.preventDefault()}
               />
               {/* Preload prev/next images invisibly to make switching instant */}
