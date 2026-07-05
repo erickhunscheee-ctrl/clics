@@ -57,6 +57,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
 
   // Seleção múltipla
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [lastSelectedPhotoIndex, setLastSelectedPhotoIndex] = useState<number | null>(null);
   const [batchPrice, setBatchPrice] = useState("");
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showBatchMoveModal, setShowBatchMoveModal] = useState(false);
@@ -432,6 +433,12 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
     }
   };
 
+  const visiblePhotos =
+    activeFolderId === "all"
+      ? photos
+      : photos.filter((photo) => photo.folderId === activeFolderId);
+  const hasUnfolderedPhotos = photos.some((photo) => photo.folderId === null);
+
   const handleSelectAll = () => {
     const visiblePhotoIds = visiblePhotos.map((photo) => photo.id);
 
@@ -442,23 +449,30 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
     }
   };
 
-  const toggleSelectPhoto = (photoId: string) => {
-    if (selectedPhotos.includes(photoId)) {
-      setSelectedPhotos((prev) => prev.filter((id) => id !== photoId));
+  const toggleSelectPhoto = (photoId: string, index: number, event?: React.MouseEvent) => {
+    if (event && event.shiftKey && lastSelectedPhotoIndex !== null) {
+      const start = Math.min(lastSelectedPhotoIndex, index);
+      const end = Math.max(lastSelectedPhotoIndex, index);
+      const photosToSelect = visiblePhotos.slice(start, end + 1).map((p) => p.id);
+      
+      setSelectedPhotos((prev) => {
+        const newSet = new Set(prev);
+        photosToSelect.forEach((id) => newSet.add(id));
+        return Array.from(newSet);
+      });
     } else {
-      setSelectedPhotos((prev) => [...prev, photoId]);
+      if (selectedPhotos.includes(photoId)) {
+        setSelectedPhotos((prev) => prev.filter((id) => id !== photoId));
+      } else {
+        setSelectedPhotos((prev) => [...prev, photoId]);
+      }
     }
+    setLastSelectedPhotoIndex(index);
   };
 
   if (loading) {
     return <div className="h-64 flex items-center justify-center text-zinc-500 animate-pulse">Carregando gerenciador de fotos...</div>;
   }
-
-  const visiblePhotos =
-    activeFolderId === "all"
-      ? photos
-      : photos.filter((photo) => photo.folderId === activeFolderId);
-  const hasUnfolderedPhotos = photos.some((photo) => photo.folderId === null);
 
   return (
     <div className="space-y-8">
@@ -670,14 +684,14 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {visiblePhotos.map((photo) => {
+          {visiblePhotos.map((photo, index) => {
               const isCover = album?.coverImageUrl === photo.previewUrl;
 
               return (
             <div
               key={photo.id}
-              onClick={() => {
-                if (selectedPhotos.length > 0) toggleSelectPhoto(photo.id);
+              onClick={(e) => {
+                if (selectedPhotos.length > 0) toggleSelectPhoto(photo.id, index, e);
               }}
               className={`bg-zinc-900/40 border rounded-2xl overflow-hidden flex flex-col justify-between group transition-all relative ${
                 selectedPhotos.includes(photo.id) ? "border-violet-500 ring-2 ring-violet-500/25" : "border-zinc-800 hover:border-zinc-700"
@@ -688,7 +702,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleSelectPhoto(photo.id);
+                  toggleSelectPhoto(photo.id, index, e);
                 }}
                 className={`absolute top-3 left-3 h-6 w-6 rounded-lg flex items-center justify-center border transition-all z-10 ${
                   selectedPhotos.includes(photo.id)

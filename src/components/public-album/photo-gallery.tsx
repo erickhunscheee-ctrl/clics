@@ -241,7 +241,15 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10 pb-32">
+      <main className="max-w-7xl mx-auto px-6 py-8 pb-32">
+        {/* Security Warning Notice */}
+        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+          <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-amber-800 font-medium leading-relaxed">
+            <strong>Aviso de Segurança:</strong> Qualquer tentativa de exportação, captura de tela ou cópia das fotos sem pagamento é detectada pelo sistema. Todas as imagens possuem um número de registro único e rastreável na plataforma para proteção de direitos autorais.
+          </p>
+        </div>
+
         {(album.folders.length > 0 || hasUnfolderedPhotos) && (
           <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
             <button
