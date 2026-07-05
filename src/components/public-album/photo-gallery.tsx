@@ -471,23 +471,29 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
               <ChevronLeft size={20} />
             </button>
 
-            {/* Image */}
-            <div className="relative flex items-center justify-center max-h-[55vh] md:max-h-[80vh] max-w-full">
-              <img
-                src={activePhoto.previewUrl}
-                alt={activePhoto.originalFileName}
-                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
-                onContextMenu={(e) => e.preventDefault()}
-              />
-              {/* Preload prev/next images invisibly to make switching instant */}
-              <div className="hidden">
-                {visiblePhotos[activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex - 1] && (
-                  <img src={visiblePhotos[activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex - 1].previewUrl} alt="prev" />
-                )}
-                {visiblePhotos[activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex + 1] && (
-                  <img src={visiblePhotos[activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex + 1].previewUrl} alt="next" />
-                )}
-              </div>
+            {/* Images Container */}
+            <div className="relative flex items-center justify-center max-h-[55vh] md:max-h-[80vh] w-full h-[55vh] md:h-[80vh] max-w-full overflow-hidden">
+              {visiblePhotos.map((photo, index) => {
+                const isCurrent = index === activePhotoIndex;
+                const isPrev = index === (activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex! - 1);
+                const isNext = index === (activePhotoIndex === visiblePhotos.length - 1 ? 0 : activePhotoIndex! + 1);
+
+                // Renderiza apenas a atual, anterior e próxima para economizar memória,
+                // mas as mantem no DOM para troca instantânea via opacidade.
+                if (!isCurrent && !isPrev && !isNext && visiblePhotos.length > 3) return null;
+
+                return (
+                  <img
+                    key={photo.id}
+                    src={photo.previewUrl}
+                    alt={photo.originalFileName}
+                    className={`absolute photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none ${
+                      isCurrent ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                    }`}
+                    onContextMenu={(e) => e.preventDefault()}
+                  />
+                );
+              })}
             </div>
 
             {/* Nav Next */}
