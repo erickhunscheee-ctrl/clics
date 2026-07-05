@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { formatCurrency } from "@/lib/money";
-import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight, Folder } from "lucide-react";
+import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight, Folder, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 
@@ -47,12 +47,43 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   const { items, addToCart, removeFromCart, isInCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeFolderId, setActiveFolderId] = useState<string | null>("all");
+  const [printBlocked, setPrintBlocked] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const promotion = {
     promotionEnabled: album.promotionEnabled,
     promotionMinPhotos: album.promotionMinPhotos,
     promotionDiscountBps: album.promotionDiscountBps,
   };
   const promotionPercent = album.promotionDiscountBps / 100;
+
+  // --- Screenshot / Print-screen protection ---
+  useEffect(() => {
+    const showOverlay = () => {
+      setPrintBlocked(true);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = setTimeout(() => setPrintBlocked(false), 1200);
+    };
+
+    // visibilitychange fires on Windows (PrtScn), macOS (Cmd+Shift+3/4) and some Android captures
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") showOverlay();
+    };
+
+    // CSS media: print blocks print-to-PDF / Ctrl+P
+    const printMQ = window.matchMedia("print");
+    const handlePrint = (e: MediaQueryListEvent) => { if (e.matches) showOverlay(); };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    printMQ.addEventListener("change", handlePrint);
+    window.addEventListener("beforeprint", showOverlay);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      printMQ.removeEventListener("change", handlePrint);
+      window.removeEventListener("beforeprint", showOverlay);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
   
   // Modal de visualização ampliada
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
@@ -92,7 +123,48 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   const checkoutHref = `/checkout?album=${album.slug}`;
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-[#061337] selection:bg-[#7B3FF2] selection:text-white" style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}>
+    <div
+      className="min-h-screen bg-[#F6F8FC] text-[#061337] selection:bg-[#7B3FF2] selection:text-white"
+      style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
+      // Block drag-to-save on all images in this container
+      onDragStart={(e) => e.preventDefault()}
+    >
+      {/* ===== Screenshot Blocker Overlay ===== */}
+      {printBlocked && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "#000",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "16px",
+          }}
+          aria-label="Captura de tela bloqueada"
+        >
+          <ShieldAlert size={56} color="#7B3FF2" strokeWidth={1.5} />
+          <p style={{ color: "white", fontWeight: 700, fontSize: "1.1rem", textAlign: "center", maxWidth: 320 }}>
+            As fotos desta galeria são protegidas contra cópia.
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", textAlign: "center", maxWidth: 280 }}>
+            Adquira as fotos para ter acesso à versão original sem marca d&apos;água.
+          </p>
+        </div>
+      )}
+
+      {/* CSS: block print media + protect photo images */}
+      <style>{`
+        @media print { body * { visibility: hidden !important; } }
+        .photo-img {
+          -webkit-touch-callout: none !important;
+          -webkit-user-select: none !important;
+          user-select: none !important;
+          pointer-events: none !important;
+        }
+      `}</style>
       {/* Back to Albums Header */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30 px-6 py-4 shadow-[0_2px_16px_0_rgba(6,19,55,0.03)]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -242,7 +314,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     <img
                       src={photo.previewUrl}
                       alt={photo.originalFileName}
-                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 select-none"
+                      className="photo-img w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 select-none"
                     />
 
                     {/* Favorite Photo Button */}
@@ -382,7 +454,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
               <img
                 src={activePhoto.previewUrl}
                 alt={activePhoto.originalFileName}
-                className="max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
+                className="photo-img max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
                 onContextMenu={(e) => e.preventDefault()} // impede clique com o botão direito para salvar
               />
             </div>

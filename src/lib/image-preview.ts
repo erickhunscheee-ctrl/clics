@@ -10,7 +10,12 @@ interface PreviewResult {
   contentType: string;
 }
 
-async function createLogoWatermarkOverlay(width: number, height: number): Promise<Buffer> {
+/**
+ * Creates an SVG overlay with both the CLICS logo watermark and a protective grid.
+ * The grid lines are drawn at every ~10% of the smallest image dimension,
+ * making the overlay scale naturally regardless of image resolution.
+ */
+async function createWatermarkAndGridOverlay(width: number, height: number): Promise<Buffer> {
   const logoPath = path.join(process.cwd(), "public", "logo_clics_branco.png");
   const logoBuffer = await readFile(logoPath);
   const logoMetadata = await sharp(logoBuffer).metadata();
@@ -19,9 +24,23 @@ async function createLogoWatermarkOverlay(width: number, height: number): Promis
   const logoHeight = Math.round(logoWidth * logoAspectRatio);
   const logoBase64 = logoBuffer.toString("base64");
 
+  // Grid: lines every ~10% of the shortest side
+  const step = Math.round(Math.min(width, height) * 0.10);
+  const gridLines: string[] = [];
+
+  // Vertical lines
+  for (let x = step; x < width; x += step) {
+    gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="0.8" stroke-opacity="0.18" />`);
+  }
+  // Horizontal lines
+  for (let y = step; y < height; y += step) {
+    gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="0.8" stroke-opacity="0.18" />`);
+  }
+
   return Buffer.from(`
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="transparent"/>
+      ${gridLines.join("\n      ")}
       <image
         href="data:image/png;base64,${logoBase64}"
         width="${logoWidth}"
@@ -70,9 +89,10 @@ export async function generatePhotoPreview(
   let outputBuffer = resizedBuffer;
 
   if (enableWatermark && info.width > 0 && info.height > 0) {
-    const watermarkBuffer = await createLogoWatermarkOverlay(info.width, info.height);
+    // Single composite pass: grid + logo watermark — avoids double re-encoding
+    const overlayBuffer = await createWatermarkAndGridOverlay(info.width, info.height);
     outputBuffer = await sharp(resizedBuffer)
-      .composite([{ input: watermarkBuffer, gravity: "center" }])
+      .composite([{ input: overlayBuffer, gravity: "center" }])
       .webp({ quality })
       .toBuffer();
   }
