@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/money";
@@ -25,6 +26,10 @@ interface OrderPageProps {
 export default async function OrderPage({ params, searchParams }: OrderPageProps) {
   const { token } = await params;
   const { payment_id: paymentId, collection_id: collectionId } = await searchParams;
+
+  const headersList = await headers();
+  const userAgent = headersList.get("user-agent") || "";
+  const isInstagram = userAgent.toLowerCase().includes("instagram");
 
   let order = await prisma.order.findUnique({
     where: { accessToken: token },
@@ -176,6 +181,23 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
 
       {/* ── Conteúdo ───────────────────────── */}
       <main className="max-w-4xl mx-auto px-4 pt-6 space-y-5">
+        
+        {/* Instagram In-App Browser Warning */}
+        {isInstagram && (
+          <div
+            className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-sm"
+          >
+            <div className="bg-amber-100 p-2 rounded-full text-amber-600 shrink-0">
+              <Download size={20} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-amber-800">Você está navegando pelo Instagram</h3>
+              <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                O Instagram costuma bloquear os downloads de fotos. Para conseguir salvar no seu dispositivo, toque no botão de <strong className="font-bold">3 pontinhos no canto superior da tela</strong> e selecione <strong className="font-bold">"Abrir no navegador"</strong> (Chrome ou Safari).
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Status Card ── */}
         <div className="bg-white rounded-3xl p-6 md:p-8" style={{ boxShadow: "0 2px 16px rgba(6,19,55,0.07)" }}>
@@ -262,6 +284,8 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                     {order.status === "PAID" && !isExpired && (
                       <a
                         href={`/api/download/${item.photoId}?token=${token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex h-10 w-10 items-center justify-center rounded-xl transition-all hover:-translate-y-0.5 flex-shrink-0"
                         style={{
                           background: "linear-gradient(135deg, #159BEF, #7B3FF2)",
