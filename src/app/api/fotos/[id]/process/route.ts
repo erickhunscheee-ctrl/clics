@@ -7,6 +7,15 @@ import { uploadOriginalToDrive } from "@/lib/google-drive";
 import { generatePhotoPreview } from "@/lib/image-preview";
 import { v4 as uuidv4 } from "uuid";
 
+// Permite até 30 MB por upload (fotos JPEG de câmera profissional podem ter 20-25 MB)
+export const maxDuration = 60; // segundos
+export const dynamic = "force-dynamic";
+export const config = {
+  api: {
+    bodySizeLimit: "30mb",
+  },
+};
+
 interface Params {
   params: Promise<{ id: string }>; // albumId
 }

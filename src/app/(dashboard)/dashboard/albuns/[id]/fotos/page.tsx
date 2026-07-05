@@ -116,8 +116,19 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
         setUploadProgress((prev) => ({ ...prev, [tempId]: 80 }));
 
         if (!resProcess.ok) {
-          const errData = await resProcess.json();
-          throw new Error(errData.message || `Falha ao processar ${file.name}`);
+          // Respostas de erro do proxy (413, 502, etc.) podem não ser JSON
+          let errorMessage = `Falha ao processar ${file.name}`;
+          try {
+            const errData = await resProcess.json();
+            errorMessage = errData.message || errorMessage;
+          } catch {
+            if (resProcess.status === 413) {
+              errorMessage = `${file.name} é muito grande. Envie fotos de até 30 MB.`;
+            } else {
+              errorMessage = `Erro ${resProcess.status}: ${resProcess.statusText || "Falha no servidor"}`;
+            }
+          }
+          throw new Error(errorMessage);
         }
 
         const newPhoto = await resProcess.json();
