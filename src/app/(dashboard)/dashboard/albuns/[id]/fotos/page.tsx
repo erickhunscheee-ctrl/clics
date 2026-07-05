@@ -488,17 +488,17 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
       </div>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Fotos: {album?.title}</h1>
-          <p className="text-zinc-400 mt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-900 pb-5">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate">Fotos: {album?.title}</h1>
+          <p className="text-zinc-400 mt-1 text-sm hidden sm:block">
             Carregue novas imagens, defina os valores por foto e use a estrela para escolher a capa do album.
           </p>
         </div>
 
-        {/* Input de Upload Oculto */}
-        <label className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 px-5 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm cursor-pointer disabled:opacity-50">
-          <Upload size={18} />
+        {/* Input de Upload */}
+        <label className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm cursor-pointer shrink-0">
+          <Upload size={16} />
           {uploading ? "Enviando..." : activeFolderId && activeFolderId !== "all" ? "Enviar para pasta" : "Enviar Fotos"}
           <input
             type="file"
@@ -539,14 +539,14 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
       )}
 
       <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Folder size={16} className="text-violet-400" />
-              Pastas do album
+              <Folder size={15} className="text-violet-400" />
+              Pastas do álbum
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Selecione uma pasta antes de enviar fotos para organizar este album.
+            <p className="mt-0.5 text-xs text-zinc-500 hidden sm:block">
+              Selecione uma pasta antes de enviar fotos para organizar este álbum.
             </p>
           </div>
 
@@ -556,29 +556,32 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="Nome da pasta"
-              className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500"
+              className="min-w-0 flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500"
             />
             <button
               type="submit"
               disabled={creatingFolder || newFolderName.trim().length < 2}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-500 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-500 disabled:opacity-50"
             >
-              <FolderPlus size={14} />
+              <FolderPlus size={13} />
               Criar
             </button>
           </form>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div
+          className="flex gap-2 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           <button
             type="button"
             onClick={() => {
               setActiveFolderId("all");
               setSelectedPhotos([]);
             }}
-            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition ${
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
               activeFolderId === "all"
-                ? "bg-violet-600 text-white"
+                ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
                 : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white"
             }`}
           >
@@ -589,14 +592,14 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
             const count = photos.filter((photo) => photo.folderId === folder.id).length;
 
             return (
-              <div key={folder.id} className="group flex shrink-0 overflow-hidden rounded-xl border border-zinc-800">
+              <div key={folder.id} className="group flex shrink-0 overflow-hidden rounded-full border border-zinc-800">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveFolderId(folder.id);
                     setSelectedPhotos([]);
                   }}
-                  className={`px-3 py-2 text-xs font-bold transition ${
+                  className={`pl-3.5 pr-2 py-1.5 text-xs font-bold transition-all ${
                     activeFolderId === folder.id
                       ? "bg-violet-600 text-white"
                       : "bg-zinc-900 text-zinc-400 hover:text-white"
@@ -607,10 +610,12 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                 <button
                   type="button"
                   onClick={() => handleDeleteFolder(folder.id)}
-                  className="border-l border-zinc-800 bg-zinc-900 px-2 text-zinc-600 transition hover:bg-red-950 hover:text-red-300"
+                  className={`border-l border-zinc-800 px-2 text-zinc-600 transition hover:bg-red-950 hover:text-red-300 ${
+                    activeFolderId === folder.id ? "bg-violet-700" : "bg-zinc-900"
+                  }`}
                   title="Excluir pasta"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={11} />
                 </button>
               </div>
             );
@@ -623,9 +628,9 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                 setActiveFolderId(null);
                 setSelectedPhotos([]);
               }}
-              className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition ${
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
                 activeFolderId === null
-                  ? "bg-violet-600 text-white"
+                  ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
                   : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white"
               }`}
             >
@@ -683,7 +688,7 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
           {visiblePhotos.map((photo, index) => {
               const isCover = album?.coverImageUrl === photo.previewUrl;
 
@@ -735,22 +740,24 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
               </div>
 
               {/* Detalhes e Ações da Foto */}
-              <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
-                <select
-                  value={photo.folderId ?? ""}
-                  onChange={(e) => handleMovePhotoToFolder(photo, e.target.value || null)}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[11px] font-semibold text-zinc-300 focus:outline-none focus:border-violet-500"
-                >
-                  <option value="">Sem pasta</option>
-                  {folders.map((folder) => (
-                    <option key={folder.id} value={folder.id}>
-                      {folder.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex items-center justify-between">
+              <div className="p-2.5 sm:p-4 space-y-2 sm:space-y-3" onClick={(e) => e.stopPropagation()}>
+                {folders.length > 0 && (
+                  <select
+                    value={photo.folderId ?? ""}
+                    onChange={(e) => handleMovePhotoToFolder(photo, e.target.value || null)}
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[11px] font-semibold text-zinc-300 focus:outline-none focus:border-violet-500"
+                  >
+                    <option value="">Sem pasta</option>
+                    {folders.map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <div className="flex items-center justify-between gap-1">
                   {editingPhotoId === photo.id ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <span className="text-zinc-500 text-xs">R$</span>
                       <input
                         type="number"
@@ -758,18 +765,18 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                         min="0"
                         value={editingPrice}
                         onChange={(e) => setEditingPrice(e.target.value)}
-                        className="w-16 bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-xs text-white text-center focus:outline-none"
+                        className="w-14 bg-zinc-950 border border-zinc-800 rounded px-1 py-0.5 text-xs text-white text-center focus:outline-none"
                       />
                       <button
                         onClick={() => handleSaveIndividualPrice(photo)}
                         className="p-1 bg-violet-600 text-white rounded hover:bg-violet-500"
                       >
-                        <Check size={12} />
+                        <Check size={11} />
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 group/price">
-                      <span className="text-sm font-bold text-white">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className="text-xs sm:text-sm font-bold text-white truncate">
                         {formatCurrency(photo.price)}
                       </span>
                       <button
@@ -777,42 +784,42 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
                           setEditingPhotoId(photo.id);
                           setEditingPrice((photo.price / 100).toFixed(2));
                         }}
-                        className="p-1 text-zinc-500 hover:text-white rounded"
+                        className="p-0.5 sm:p-1 text-zinc-500 hover:text-white rounded shrink-0"
                       >
-                        <Edit2 size={12} />
+                        <Edit2 size={11} />
                       </button>
                     </div>
                   )}
 
                   {/* Status & Deletar */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                     <button
                       onClick={() => handleSetCover(photo)}
                       disabled={coverUpdatingPhotoId === photo.id || isCover}
-                      className={`p-1.5 rounded-lg border transition-colors ${
+                      className={`p-1 sm:p-1.5 rounded-lg border transition-colors ${
                         isCover
                           ? "bg-violet-500/15 border-violet-500/30 text-violet-300 cursor-default"
                           : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-yellow-300"
                       }`}
                       title={isCover ? "Foto de capa" : "Definir como capa"}
                     >
-                      <Star size={14} fill={isCover ? "currentColor" : "none"} />
+                      <Star size={12} fill={isCover ? "currentColor" : "none"} />
                     </button>
                     <button
                       onClick={() => handleToggleStatus(photo)}
-                      className={`p-1.5 rounded-lg border transition-colors ${
+                      className={`p-1 sm:p-1.5 rounded-lg border transition-colors ${
                         photo.status === "ACTIVE"
                           ? "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
                           : "bg-amber-500/10 border-amber-500/20 text-amber-400"
                       }`}
                     >
-                      {photo.status === "ACTIVE" ? <Eye size={14} /> : <EyeOff size={14} />}
+                      {photo.status === "ACTIVE" ? <Eye size={12} /> : <EyeOff size={12} />}
                     </button>
                     <button
                       onClick={() => handleDeletePhoto(photo.id)}
-                      className="p-1.5 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:text-red-300 hover:bg-red-950 transition-colors"
+                      className="p-1 sm:p-1.5 rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:text-red-300 hover:bg-red-950 transition-colors"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>

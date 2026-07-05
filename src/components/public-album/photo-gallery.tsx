@@ -251,51 +251,65 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
         </div>
 
         {(album.folders.length > 0 || hasUnfolderedPhotos) && (
-          <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveFolderId("all");
-                setActivePhotoIndex(null);
-              }}
-              className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
-                activeFolderId === "all" ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
-              }`}
+          <div className="mb-6">
+            <div
+              className="flex gap-2 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              <Folder size={14} />
-              Todas
-            </button>
-            {album.folders.map((folder) => (
-              <button
-                key={folder.id}
-                type="button"
-                onClick={() => {
-                  setActiveFolderId(folder.id);
-                  setActivePhotoIndex(null);
-                }}
-                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
-                  activeFolderId === folder.id ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
-                }`}
-              >
-                <Folder size={14} />
-                {folder.name}
-              </button>
-            ))}
-            {hasUnfolderedPhotos && (
               <button
                 type="button"
                 onClick={() => {
-                  setActiveFolderId(null);
+                  setActiveFolderId("all");
                   setActivePhotoIndex(null);
                 }}
-                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition ${
-                  activeFolderId === null ? "bg-[#061337] text-white" : "bg-white text-[#061337] border border-slate-200"
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                  activeFolderId === "all"
+                    ? "text-white shadow-md"
+                    : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
                 }`}
+                style={activeFolderId === "all" ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
               >
-                <Folder size={14} />
-                Sem pasta
+                <Folder size={12} />
+                Todas
               </button>
-            )}
+              {album.folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveFolderId(folder.id);
+                    setActivePhotoIndex(null);
+                  }}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                    activeFolderId === folder.id
+                      ? "text-white shadow-md"
+                      : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
+                  }`}
+                  style={activeFolderId === folder.id ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
+                >
+                  <Folder size={12} />
+                  {folder.name}
+                </button>
+              ))}
+              {hasUnfolderedPhotos && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveFolderId(null);
+                    setActivePhotoIndex(null);
+                  }}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                    activeFolderId === null
+                      ? "text-white shadow-md"
+                      : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
+                  }`}
+                  style={activeFolderId === null ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
+                >
+                  <Folder size={12} />
+                  Sem pasta
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -307,14 +321,14 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {visiblePhotos.map((photo, index) => {
               const selected = isInCart(photo.id);
               return (
                 <div
                   key={photo.id}
-                  className={`bg-white border rounded-[2rem] overflow-hidden flex flex-col justify-between group transition-all duration-300 relative shadow-sm ${
-                    selected ? "border-[#7B3FF2] ring-2 ring-[#7B3FF2]/20 -translate-y-1" : "border-slate-200/60 hover:border-slate-350 hover:-translate-y-1"
+                  className={`bg-white border rounded-2xl sm:rounded-[2rem] overflow-hidden flex flex-col justify-between group transition-all duration-300 relative shadow-sm ${
+                    selected ? "border-[#7B3FF2] ring-2 ring-[#7B3FF2]/20 -translate-y-0.5 sm:-translate-y-1" : "border-slate-200/60 hover:border-slate-350 hover:-translate-y-0.5 sm:hover:-translate-y-1"
                   }`}
                 >
                   {/* Preview Image Container */}
@@ -326,7 +340,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     />
 
                     {/* Favorite Photo Button */}
-                    <div className="absolute top-3 right-3 z-10">
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
                       <FavoriteButton
                         type="photo"
                         photo={{
@@ -340,9 +354,9 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                         className="bg-white/80 backdrop-blur-md hover:bg-white text-gray-800 shadow-sm"
                       />
                     </div>
-                    
-                    {/* Hover controls overlay */}
-                    <div className="absolute inset-0 bg-[#061337]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+
+                    {/* Hover controls overlay - hidden on mobile touch */}
+                    <div className="hidden sm:flex absolute inset-0 bg-[#061337]/20 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -355,16 +369,16 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     </div>
 
                     {/* Preço Tag */}
-                    <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/50 text-xs font-black text-[#061337] shadow-sm select-none">
+                    <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-white/95 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-slate-200/50 text-[10px] sm:text-xs font-black text-[#061337] shadow-sm select-none">
                       {formatCurrency(photo.price)}
                     </div>
                   </div>
 
                   {/* Buy Button */}
-                  <div className="p-3.5 bg-white border-t border-slate-100">
+                  <div className="p-2.5 sm:p-3.5 bg-white border-t border-slate-100">
                     <button
                       onClick={() => handleToggleCart(photo)}
-                      className={`w-full py-2.5 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                      className={`w-full py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                         selected
                           ? "text-white shadow-md shadow-[#7B3FF2]/10"
                           : "bg-[#F6F8FC] hover:bg-slate-100 text-[#061337]/80 border border-slate-200/50"
@@ -375,13 +389,13 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     >
                       {selected ? (
                         <>
-                          <Check size={14} />
-                          Selecionada
+                          <Check size={12} />
+                          <span>Selecionada</span>
                         </>
                       ) : (
                         <>
-                          <ShoppingCart size={14} />
-                          Selecionar Foto
+                          <ShoppingCart size={12} />
+                          <span>Selecionar</span>
                         </>
                       )}
                     </button>
@@ -442,48 +456,51 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
           {/* Close button */}
           <button
             onClick={() => setActivePhotoIndex(null)}
-            className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full bg-zinc-900/80 border border-zinc-850 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors"
+            className="absolute top-3 right-3 md:top-4 md:right-4 z-50 h-9 w-9 md:h-10 md:w-10 rounded-full bg-zinc-900/80 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
 
           {/* Main viewer (image) */}
-          <div className="flex-1 flex items-center justify-center relative p-6">
+          <div className="flex-1 flex items-center justify-center relative p-4 md:p-6">
             {/* Nav Prev */}
             <button
               onClick={handlePrevPhoto}
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-zinc-900/60 border border-zinc-850 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 h-9 w-9 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} />
             </button>
 
-            {/* Image (With watermarked effect or standard protected view) */}
-            <div className="relative max-h-[80vh] max-w-full aspect-auto">
+            {/* Image */}
+            <div className="relative max-h-[55vh] md:max-h-[80vh] max-w-full">
               <img
                 src={activePhoto.previewUrl}
                 alt={activePhoto.originalFileName}
-                className="photo-img max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
-                onContextMenu={(e) => e.preventDefault()} // impede clique com o botão direito para salvar
+                className="photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none"
+                onContextMenu={(e) => e.preventDefault()}
               />
             </div>
 
             {/* Nav Next */}
             <button
               onClick={handleNextPhoto}
-              className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-zinc-900/60 border border-zinc-850 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 h-9 w-9 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={20} />
             </button>
           </div>
 
-          {/* Detail Side Panel */}
-          <div className="w-full md:w-80 bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-900 p-6 flex flex-col justify-between text-white">
-            <div className="space-y-6">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Nome do Arquivo</p>
-                  <h4 className="text-sm font-semibold truncate">{activePhoto.originalFileName}</h4>
-                </div>
+          {/* Detail Panel — bottom on mobile, right side on md+ */}
+          <div className="w-full md:w-80 bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-800 p-4 md:p-6 flex flex-col md:justify-between text-white">
+            {/* Mobile: horizontal layout */}
+            <div className="flex md:block items-center justify-between gap-3 md:space-y-6">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-0.5">Preço da Foto</p>
+                <h4 className="text-xl md:text-2xl font-black">{formatCurrency(activePhoto.price)}</h4>
+                <p className="hidden md:block text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-4 mb-1">Nome do Arquivo</p>
+                <p className="hidden md:block text-sm font-semibold truncate">{activePhoto.originalFileName}</p>
+              </div>
+              <div className="flex items-center gap-2">
                 <FavoriteButton
                   type="photo"
                   photo={{
@@ -496,15 +513,23 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                   }}
                   className="bg-zinc-900 hover:bg-zinc-800 text-white shadow-sm p-1.5"
                 />
-              </div>
-
-              <div>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Preço da Foto</p>
-                <h4 className="text-2xl font-black">{formatCurrency(activePhoto.price)}</h4>
+                {/* Mobile inline cart button */}
+                <button
+                  onClick={() => handleToggleCart(activePhoto)}
+                  className={`md:hidden flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                    isInCart(activePhoto.id) ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "text-white"
+                  }`}
+                  style={!isInCart(activePhoto.id) ? {
+                    background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)",
+                  } : undefined}
+                >
+                  {isInCart(activePhoto.id) ? <><Check size={13} /> Selecionada</> : <><ShoppingCart size={13} /> Adicionar</>}
+                </button>
               </div>
             </div>
 
-            <div className="pt-6 space-y-3">
+            {/* Desktop action buttons */}
+            <div className="hidden md:block pt-6 space-y-3">
               <button
                 onClick={() => handleToggleCart(activePhoto)}
                 className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
@@ -518,15 +543,9 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                 } : undefined}
               >
                 {isInCart(activePhoto.id) ? (
-                  <>
-                    <Check size={16} />
-                    Selecionada no Carrinho
-                  </>
+                  <><Check size={16} />Selecionada no Carrinho</>
                 ) : (
-                  <>
-                    <ShoppingCart size={16} />
-                    Adicionar ao Carrinho
-                  </>
+                  <><ShoppingCart size={16} />Adicionar ao Carrinho</>
                 )}
               </button>
               {items.length > 0 && (
@@ -539,6 +558,17 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                 </Link>
               )}
             </div>
+
+            {/* Mobile: checkout link if cart has items */}
+            {items.length > 0 && (
+              <Link
+                href={checkoutHref}
+                onClick={() => setActivePhotoIndex(null)}
+                className="md:hidden mt-2 flex w-full items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center border border-zinc-800"
+              >
+                Finalizar Compra <ArrowRight size={13} />
+              </Link>
+            )}
           </div>
         </div>
       )}
