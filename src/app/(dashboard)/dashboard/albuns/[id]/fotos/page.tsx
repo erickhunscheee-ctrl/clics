@@ -59,6 +59,8 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [batchPrice, setBatchPrice] = useState("");
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [showBatchMoveModal, setShowBatchMoveModal] = useState(false);
+  const [batchMoveFolderId, setBatchMoveFolderId] = useState<string | null>(null);
 
   // Edição individual de preço
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
@@ -319,6 +321,37 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
       setBatchPrice("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar preco em lote.");
+    }
+  };
+
+  const handleSaveBatchMove = async () => {
+    if (selectedPhotos.length === 0) return;
+
+    try {
+      const res = await fetch("/api/fotos/batch/move", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoIds: selectedPhotos,
+          folderId: batchMoveFolderId,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Erro ao mover fotos em lote.");
+
+      setPhotos((prev) =>
+        prev.map((p) =>
+          selectedPhotos.includes(p.id)
+            ? { ...p, folderId: batchMoveFolderId }
+            : p
+        )
+      );
+
+      setSelectedPhotos([]);
+      setShowBatchMoveModal(false);
+      setBatchMoveFolderId(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao mover fotos em lote.");
     }
   };
 
@@ -604,13 +637,22 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
           </div>
 
           {selectedPhotos.length > 0 && (
-            <button
-              onClick={() => setShowBatchModal(true)}
-              className="flex items-center gap-2 bg-violet-600/15 hover:bg-violet-600/25 text-violet-400 font-semibold px-4 py-2 border border-violet-500/25 rounded-xl text-xs transition-colors"
-            >
-              <DollarSign size={14} />
-              Definir Preço em Lote
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBatchMoveModal(true)}
+                className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold px-4 py-2 border border-zinc-700 rounded-xl text-xs transition-colors"
+              >
+                <Folder size={14} />
+                Mover
+              </button>
+              <button
+                onClick={() => setShowBatchModal(true)}
+                className="flex items-center gap-2 bg-violet-600/15 hover:bg-violet-600/25 text-violet-400 font-semibold px-4 py-2 border border-violet-500/25 rounded-xl text-xs transition-colors"
+              >
+                <DollarSign size={14} />
+                Definir Preço
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -808,6 +850,52 @@ export default function PhotoManagementPage({ params }: PhotoManagementPageProps
               className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors"
             >
               Aplicar a {selectedPhotos.length} Fotos
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Mover em Lote */}
+      {showBatchMoveModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Mover Fotos</h3>
+              <button
+                onClick={() => setShowBatchMoveModal(false)}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Mova as {selectedPhotos.length} fotos selecionadas para outra pasta.
+            </p>
+
+            <div>
+              <label className="block text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                Pasta de Destino
+              </label>
+              <select
+                value={batchMoveFolderId ?? ""}
+                onChange={(e) => setBatchMoveFolderId(e.target.value || null)}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-zinc-300 focus:outline-none focus:border-violet-500"
+              >
+                <option value="">Sem pasta</option>
+                {folders.map((folder) => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleSaveBatchMove}
+              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors"
+            >
+              Mover {selectedPhotos.length} Fotos
             </button>
           </div>
         </div>
