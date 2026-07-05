@@ -26,16 +26,17 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
 
   // Evita divisão por zero ou loop infinito se dimensões forem inválidas
   const minDimension = Math.min(width, height) || 100;
-  const step = Math.max(20, Math.round(minDimension * 0.10));
+  // Densidade aumentada de 10% para 7% para desenhar mais linhas (grid mais fechado)
+  const step = Math.max(20, Math.round(minDimension * 0.07));
   const gridLines: string[] = [];
 
-  // Vertical lines
+  // Vertical lines (espessura de 1.5px e opacidade de 45% para ficar bem marcante)
   for (let x = step; x < width; x += step) {
-    gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="0.8" stroke-opacity="0.18" />`);
+    gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="1.5" stroke-opacity="0.45" />`);
   }
   // Horizontal lines
   for (let y = step; y < height; y += step) {
-    gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="0.8" stroke-opacity="0.18" />`);
+    gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="1.5" stroke-opacity="0.45" />`);
   }
 
   return Buffer.from(`
