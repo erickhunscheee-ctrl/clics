@@ -128,6 +128,8 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
       style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
       // Block drag-to-save on all images in this container
       onDragStart={(e) => e.preventDefault()}
+      // Ignore global loader on interactive local buttons
+      data-loading-ignore="true"
     >
       {/* ===== Screenshot Blocker Overlay ===== */}
       {printBlocked && (
