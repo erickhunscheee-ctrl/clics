@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   X,
 } from "lucide-react";
+import { NotificationsDropdown } from "@/components/notifications/notifications-dropdown";
 
 interface SidebarProps {
   user: {
@@ -112,6 +113,14 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
 
         <div className="space-y-4 border-t border-white/10 p-4">
+          {/* Notificações */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase text-white/30 tracking-widest">
+              Notificações
+            </span>
+            <NotificationsDropdown />
+          </div>
+
           <div className="rounded-3xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-center gap-3">
               {user.avatarUrl ? (

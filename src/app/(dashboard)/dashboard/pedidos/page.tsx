@@ -44,6 +44,9 @@ type OrdersPageSearchParams = {
   status?: string;
   method?: string;
   consult?: string;
+  albumId?: string;
+  from?: string;
+  to?: string;
 };
 
 type OrderWithDetails = Prisma.OrderGetPayload<{
@@ -84,7 +87,7 @@ type OrderWithDetails = Prisma.OrderGetPayload<{
 
 type OrderPhotoItem = OrderWithDetails["items"][number];
 
-// ??? Config maps ??????????????????????????????????????????????????????????????
+// ─── Config maps ──────────────────────────────────────────────
 
 const statusConfig: Record<OrderStatus, { label: string; className: string }> = {
   PENDING: {
@@ -92,7 +95,7 @@ const statusConfig: Record<OrderStatus, { label: string; className: string }> = 
     className: "bg-amber-500/10 text-amber-300 border-amber-500/25",
   },
   PAID: {
-    label: "Pago",
+    label: "Pago (Aprovado)",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
   },
   FAILED: {
@@ -104,7 +107,7 @@ const statusConfig: Record<OrderStatus, { label: string; className: string }> = 
     className: "bg-zinc-700/40 text-zinc-400 border-zinc-600/50",
   },
   REFUNDED: {
-    label: "Estornado",
+    label: "Estornado (Devolvido)",
     className: "bg-sky-500/10 text-sky-300 border-sky-500/25",
   },
 };
@@ -130,7 +133,29 @@ const methodConfig: Record<
   },
 };
 
-// ??? Helpers ??????????????????????????????????????????????????????????????????
+// ─── Helpers ──────────────────────────────────────────────────
+
+function translateLogEvent(eventType: string): string {
+  const event = eventType.toUpperCase();
+  if (event.includes("APPROVED") || event.includes("PAGO")) return "Aprovado";
+  if (event.includes("PENDING") || event.includes("PENDENTE") || event.includes("CREATED")) return "Pendente";
+  if (event.includes("REJECTED") || event.includes("RECUSADO") || event.includes("FAILED")) return "Recusado / Falhou";
+  if (event.includes("CANCELLED") || event.includes("CANCELADO")) return "Cancelado";
+  if (event.includes("REFUNDED") || event.includes("ESTORNADO")) return "Estornado";
+  if (event.includes("IN_PROCESS") || event.includes("PROCESS")) return "Em Processamento";
+  if (event.includes("IN_MEDIATION")) return "Em Mediação";
+  return eventType;
+}
+
+function getLogEventClass(eventType: string): string {
+  const event = eventType.toUpperCase();
+  if (event.includes("APPROVED") || event.includes("PAGO")) return "text-emerald-400";
+  if (event.includes("PENDING") || event.includes("PENDENTE") || event.includes("CREATED")) return "text-amber-400";
+  if (event.includes("REJECTED") || event.includes("RECUSADO") || event.includes("FAILED")) return "text-red-400";
+  if (event.includes("CANCELLED") || event.includes("CANCELADO")) return "text-zinc-400";
+  if (event.includes("REFUNDED") || event.includes("ESTORNADO")) return "text-sky-400";
+  return "text-zinc-300";
+}
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -366,6 +391,9 @@ export default async function OrdersAdminPage({
   const statusFilter = normalizeStatus(filters.status);
   const methodFilter = normalizeMethod(filters.method);
   const consultation = normalizeConsultation(filters.consult);
+  const albumIdFilter = filters.albumId?.trim() ?? "all";
+  const dateFromFilter = filters.from?.trim() ?? "";
+  const dateToFilter = filters.to?.trim() ?? "";
 
   const now = new Date();
   const staleCutoff = new Date(now.getTime() - 30 * 60 * 1000);
@@ -388,6 +416,21 @@ export default async function OrdersAdminPage({
   }
 
   if (statusFilter !== "all") where.status = statusFilter;
+
+  if (albumIdFilter !== "all") {
+    where.albumId = albumIdFilter;
+  }
+
+  if (dateFromFilter || dateToFilter) {
+    const createdAtFilter: Prisma.DateTimeFilter = {};
+    if (dateFromFilter) {
+      createdAtFilter.gte = new Date(`${dateFromFilter}T00:00:00`);
+    }
+    if (dateToFilter) {
+      createdAtFilter.lte = new Date(`${dateToFilter}T23:59:59`);
+    }
+    where.createdAt = createdAtFilter;
+  }
 
   if (consultation === "pending") {
     where.status = "PENDING";
@@ -440,7 +483,7 @@ export default async function OrdersAdminPage({
     },
   };
 
-  const [orders, allOrders, orphanPaymentLogs] = await Promise.all([
+  const [orders, allOrders, orphanPaymentLogs, albumsList] = await Promise.all([
     prisma.order.findMany({ where, orderBy: { createdAt: "desc" }, include }),
     prisma.order.findMany({
       include: {
@@ -456,6 +499,13 @@ export default async function OrdersAdminPage({
       orderBy: { createdAt: "desc" },
       take: 8,
       select: { id: true, eventType: true, externalId: true, createdAt: true },
+    }),
+    prisma.album.findMany({
+      orderBy: { title: "asc" },
+      select: {
+        id: true,
+        title: true,
+      },
     }),
   ]);
 
@@ -494,9 +544,19 @@ export default async function OrdersAdminPage({
     q: query,
     status: statusFilter === "all" ? undefined : statusFilter,
     method: methodFilter === "all" ? undefined : methodFilter,
+    albumId: albumIdFilter === "all" ? undefined : albumIdFilter,
+    from: dateFromFilter || undefined,
+    to: dateToFilter || undefined,
   };
 
-  const hasActiveFilters = query || statusFilter !== "all" || methodFilter !== "all" || consultation !== "all";
+  const hasActiveFilters =
+    query ||
+    statusFilter !== "all" ||
+    methodFilter !== "all" ||
+    consultation !== "all" ||
+    albumIdFilter !== "all" ||
+    dateFromFilter ||
+    dateToFilter;
 
   return (
     <div className="space-y-6">
@@ -570,71 +630,116 @@ export default async function OrdersAdminPage({
         />
       </div>
 
-      {/* ?? Filters ?? */}
+      {/* ─── Filters ────────────────────────────────────────────────── */}
       <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02]">
         <div className="p-4 sm:p-5">
           <form
-            className="grid gap-3 md:grid-cols-[1fr_0.55fr_0.55fr_auto]"
+            className="flex flex-col gap-4"
             action="/dashboard/pedidos"
           >
             <input type="hidden" name="consult" value={consultation === "all" ? "" : consultation} />
 
-            {/* Search */}
-            <label className="space-y-1.5">
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
-                <Search size={11} />
-                Busca
-              </span>
-              <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+            {/* Grid superior: Busca e Álbum */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Search */}
+              <label className="space-y-1.5">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  <Search size={11} />
+                  Busca
+                </span>
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    name="q"
+                    defaultValue={query}
+                    placeholder="Nome, e-mail, pedido, MP payment ID..."
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2 pl-8 pr-3 text-xs text-white placeholder:text-zinc-650 outline-none transition focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20"
+                  />
+                </div>
+              </label>
+
+              {/* Album Filter */}
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Filtrar por Álbum</span>
+                <select
+                  name="albumId"
+                  defaultValue={albumIdFilter}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 appearance-none cursor-pointer"
+                >
+                  <option value="all">Todos os Álbuns</option>
+                  {albumsList.map((alb) => (
+                    <option key={alb.id} value={alb.id}>
+                      {alb.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {/* Grid inferior: Status, Método, Data De, Data Até e Filtrar */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 items-end">
+              {/* Status */}
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Status</span>
+                <select
+                  name="status"
+                  defaultValue={statusFilter}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 appearance-none cursor-pointer"
+                >
+                  <option value="all">Todos</option>
+                  <option value="PAID">Aprovado</option>
+                  <option value="PENDING">Pendente</option>
+                  <option value="FAILED">Falhou</option>
+                  <option value="CANCELLED">Cancelado</option>
+                  <option value="REFUNDED">Estornado</option>
+                </select>
+              </label>
+
+              {/* Method */}
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Método</span>
+                <select
+                  name="method"
+                  defaultValue={methodFilter}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 appearance-none cursor-pointer"
+                >
+                  <option value="all">Todos</option>
+                  <option value="pix">Pix</option>
+                  <option value="card">Cartão</option>
+                  <option value="unknown">Não identificado</option>
+                </select>
+              </label>
+
+              {/* Date From */}
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Data Inicial</span>
                 <input
-                  name="q"
-                  defaultValue={query}
-                  placeholder="Nome, e-mail, pedido, MP payment ID..."
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2.5 pl-8 pr-3 text-xs text-white placeholder:text-zinc-600 outline-none transition focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20"
+                  type="date"
+                  name="from"
+                  defaultValue={dateFromFilter}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-1.5 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 [color-scheme:dark]"
                 />
-              </div>
-            </label>
+              </label>
 
-            {/* Status */}
-            <label className="space-y-1.5">
-              <span className="block text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Status</span>
-              <select
-                name="status"
-                defaultValue={statusFilter}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2.5 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 appearance-none cursor-pointer"
+              {/* Date To */}
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Data Final</span>
+                <input
+                  type="date"
+                  name="to"
+                  defaultValue={dateToFilter}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-1.5 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 [color-scheme:dark]"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-violet-500 active:scale-95 cursor-pointer"
               >
-                <option value="all">Todos</option>
-                <option value="PAID">Aprovado</option>
-                <option value="PENDING">Pendente</option>
-                <option value="FAILED">Falhou</option>
-                <option value="CANCELLED">Cancelado</option>
-                <option value="REFUNDED">Estornado</option>
-              </select>
-            </label>
-
-            {/* Method */}
-            <label className="space-y-1.5">
-              <span className="block text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Método</span>
-              <select
-                name="method"
-                defaultValue={methodFilter}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2.5 px-3 text-xs text-white outline-none transition focus:border-violet-500/60 appearance-none cursor-pointer"
-              >
-                <option value="all">Todos</option>
-                <option value="pix">Pix</option>
-                <option value="card">Cartão</option>
-                <option value="unknown">Não identificado</option>
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-violet-500 active:scale-95"
-            >
-              <SlidersHorizontal size={13} />
-              Filtrar
-            </button>
+                <SlidersHorizontal size={13} />
+                Filtrar
+              </button>
+            </div>
           </form>
 
           {/* Quick filter chips */}
@@ -810,14 +915,13 @@ export default async function OrdersAdminPage({
                       <p className="truncate font-mono">
                         MP: {order.mercadoPagoPaymentId || "não vinculado"}
                       </p>
-                      <p className={`truncate font-medium ${
-                        latestLog?.eventType?.includes("APPROVED") ? "text-emerald-500" :
-                        latestLog?.eventType?.includes("PENDING") ? "text-amber-500" :
-                        latestLog?.eventType?.includes("FAILED") ? "text-red-500" :
-                        "text-zinc-600"
-                      }`}>
-                        {latestLog ? latestLog.eventType : "sem logs"}
-                      </p>
+                      {latestLog ? (
+                        <p className={`truncate font-bold ${getLogEventClass(latestLog.eventType)}`}>
+                          {translateLogEvent(latestLog.eventType)}
+                        </p>
+                      ) : (
+                        <p className="truncate text-zinc-500 font-medium">sem logs</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -865,13 +969,8 @@ export default async function OrdersAdminPage({
                             key={log.id}
                             className="border-b border-zinc-900 pb-2.5 last:border-0 last:pb-0"
                           >
-                            <p className={`text-[11px] font-semibold ${
-                              log.eventType?.includes("APPROVED") ? "text-emerald-400" :
-                              log.eventType?.includes("PENDING") ? "text-amber-400" :
-                              log.eventType?.includes("FAILED") ? "text-red-400" :
-                              "text-zinc-300"
-                            }`}>
-                              {log.eventType}
+                            <p className={`text-[11px] font-bold ${getLogEventClass(log.eventType)}`}>
+                              {translateLogEvent(log.eventType)}
                             </p>
                             <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-600">
                               {log.externalId || "sem ID externo"}
@@ -907,7 +1006,9 @@ export default async function OrdersAdminPage({
                 key={log.id}
                 className="rounded-xl border border-amber-500/10 bg-zinc-950/50 p-3"
               >
-                <p className="truncate text-[11px] font-semibold text-zinc-300">{log.eventType}</p>
+                <p className={`truncate text-[11px] font-bold ${getLogEventClass(log.eventType)}`}>
+                  {translateLogEvent(log.eventType)}
+                </p>
                 <p className="mt-1 truncate font-mono text-[10px] text-zinc-600">
                   {log.externalId || "sem ID externo"}
                 </p>
