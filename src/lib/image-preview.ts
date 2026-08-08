@@ -11,13 +11,18 @@ interface PreviewResult {
 }
 
 /**
- * Creates a multi-layer SVG watermark overlay designed to be impossible to remove via AI inpainting:
- *   1. Dense protective grid covering the entire image
- *   2. Logo mosaic — logo tiled repeatedly across every region
- *   3. Diagonal repeating brand text — covers every angle
+ * Creates a 6-layer SVG watermark overlay engineered to be impossible to remove via AI inpainting.
  *
- * Because every region of the image is covered by overlapping layers, AI tools cannot
- * reconstruct the original without hallucinating pixels from scratch.
+ * Layers (in render order):
+ *   1. Orthogonal grid — horizontal + vertical lines every ~4% of image
+ *   2. Cross-hatch diagonal grid ±45° — creates diamond cells that block inpainting regions
+ *   3. Stipple dot pattern — high-frequency noise AI cannot separate from image detail
+ *   4. Logo mosaic — logo tiled across every region with staggered offset rows
+ *   5. Diagonal text at -35° (white + black dual pass) — adapts to any background color
+ *   6. Diagonal text at +20° — second angle ensures no clean scan direction exists
+ *
+ * With 6 overlapping independent patterns, no region of the image is clean enough
+ * for AI tools to use as inpainting reference. Removal always produces visible artifacts.
  */
 async function createWatermarkAndGridOverlay(width: number, height: number): Promise<Buffer> {
   const logoPath = path.join(process.cwd(), "public", "logo_clics_branco.png");
@@ -28,7 +33,7 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
 
   const minDimension = Math.min(width, height) || 100;
 
-  // ── CAMADA 1: Grid denso ─────────────────────────────────────────────────
+  // ── CAMADA 1: Grid ortogonal ─────────────────────────────────────────────
   const step = Math.max(12, Math.round(minDimension * 0.04));
   const gridLines: string[] = [];
   for (let x = step; x < width; x += step) {
@@ -38,8 +43,39 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
     gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="1.5" stroke-opacity="0.50" />`);
   }
 
-  // ── CAMADA 2: Mosaico de logos ───────────────────────────────────────────
-  // Logo em grade: ~25% da largura por célula — cobre toda a imagem
+  // ── CAMADA 2: Cross-hatch diagonal ±45° ─────────────────────────────────
+  // Linhas diagonais cruzadas criam losangos — nenhuma célula retangular limpa fica disponível
+  const diagStep = Math.max(18, Math.round(minDimension * 0.055));
+  const diagLines: string[] = [];
+  // +45° (canto superior-esquerdo → inferior-direito)
+  for (let start = -height; start < width + height; start += diagStep) {
+    diagLines.push(
+      `<line x1="${start}" y1="0" x2="${start + height}" y2="${height}" ` +
+      `stroke="white" stroke-width="1" stroke-opacity="0.30" />`
+    );
+  }
+  // -45° (canto superior-direito → inferior-esquerdo)
+  for (let start = 0; start < width + height; start += diagStep) {
+    diagLines.push(
+      `<line x1="${start}" y1="0" x2="${start - height}" y2="${height}" ` +
+      `stroke="white" stroke-width="1" stroke-opacity="0.30" />`
+    );
+  }
+
+  // ── CAMADA 3: Padrão de pontos (stipple) ─────────────────────────────────
+  // Ruído de alta frequência: IA não consegue separar dos pixels da foto original
+  const dotSpacing = Math.max(6, Math.round(minDimension * 0.022));
+  const dotRadius = Math.max(1.5, Math.round(minDimension * 0.004));
+  const dotPatternDef = `
+    <defs>
+      <pattern id="stipple" x="0" y="0" width="${dotSpacing}" height="${dotSpacing}" patternUnits="userSpaceOnUse">
+        <circle cx="${dotSpacing / 2}" cy="${dotSpacing / 2}" r="${dotRadius}" fill="white" opacity="0.40"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#stipple)"/>`;
+
+  // ── CAMADA 4: Mosaico de logos ───────────────────────────────────────────
+  // Logo em grade: ~25% da largura por célula, offset intercalado por coluna
   const tileW = Math.round(width * 0.25);
   const tileH = Math.round(tileW * logoAspectRatio);
   const tiledLogos: string[] = [];
@@ -47,7 +83,6 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
   const rowCount = Math.ceil(height / (tileH > 0 ? tileH : 1)) + 1;
   for (let row = 0; row < rowCount; row++) {
     for (let col = 0; col < colCount; col++) {
-      // Offset alternado em colunas ímpares para cobertura mais densa
       const yOffset = col % 2 === 0 ? 0 : tileH / 2;
       tiledLogos.push(
         `<image href="data:image/png;base64,${logoBase64}" ` +
@@ -58,34 +93,44 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
     }
   }
 
-  // ── CAMADA 3: Texto diagonal repetido ───────────────────────────────────
-  // Rotacionado -35° e repetido em múltiplas faixas diagonais
+  // ── CAMADAS 5+6: Texto em dois ângulos diferentes ────────────────────────
   const fontSize = Math.max(18, Math.round(minDimension * 0.035));
+  const fontSize2 = Math.max(14, Math.round(minDimension * 0.028));
   const textSpacing = Math.round(minDimension * 0.18);
   const brand = "CLICS • CLICS • CLICS • CLICS • CLICS • CLICS •";
-  const diagonalTexts: string[] = [];
-  // Cobre diagonal de -height até width+height para não deixar cantos sem marca
+  const textLayers: string[] = [];
+
+  // Camada 5: -35° — branco (fundos escuros) + preto (fundos claros)
   for (let offset = -height; offset < width + height; offset += textSpacing) {
-    // Linha clara (branco) — visível em fundos escuros
-    diagonalTexts.push(
+    textLayers.push(
       `<text x="${offset}" y="0" fill="white" fill-opacity="0.60" ` +
       `font-size="${fontSize}" font-family="Arial Black, Arial, sans-serif" font-weight="900" ` +
       `letter-spacing="6" transform="rotate(-35)">${brand}</text>`
     );
-    // Linha escura (preto) — visível em fundos claros, offset de metade do passo
-    diagonalTexts.push(
+    textLayers.push(
       `<text x="${offset + textSpacing / 2}" y="0" fill="black" fill-opacity="0.35" ` +
       `font-size="${fontSize}" font-family="Arial Black, Arial, sans-serif" font-weight="900" ` +
       `letter-spacing="6" transform="rotate(-35)">${brand}</text>`
     );
   }
 
+  // Camada 6: +20° — segundo ângulo, nenhuma direção de "varredura" fica limpa
+  for (let offset = -width; offset < width + height; offset += textSpacing) {
+    textLayers.push(
+      `<text x="${offset}" y="0" fill="white" fill-opacity="0.45" ` +
+      `font-size="${fontSize2}" font-family="Arial Black, Arial, sans-serif" font-weight="900" ` +
+      `letter-spacing="4" transform="rotate(20)">${brand}</text>`
+    );
+  }
+
   return Buffer.from(`
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="transparent"/>
+      ${dotPatternDef}
       ${gridLines.join("\n      ")}
+      ${diagLines.join("\n      ")}
       ${tiledLogos.join("\n      ")}
-      ${diagonalTexts.join("\n      ")}
+      ${textLayers.join("\n      ")}
     </svg>
   `);
 }
