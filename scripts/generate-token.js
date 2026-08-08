@@ -1,74 +1,93 @@
 const { google } = require('googleapis');
+const fs = require('fs');
 const http = require('http');
-const url = require('url');
-const { exec } = require('child_process');
+const path = require('path');
 
-// Configure these three variables with your credentials
-const CLIENT_ID = 'xxxxx';
-const CLIENT_SECRET = 'xxxxx';
+const ENV_PATH = path.join(__dirname, '..', '.env.google-drive');
 const PORT = 8080;
 const REDIRECT_URI = `http://localhost:${PORT}`;
 
+function readLocalCredentials() {
+  if (!fs.existsSync(ENV_PATH)) return {};
+
+  return Object.fromEntries(
+    fs.readFileSync(ENV_PATH, 'utf8')
+      .split(/\r?\n/)
+      .filter((line) => line && !line.startsWith('#') && line.includes('='))
+      .map((line) => {
+        const separator = line.indexOf('=');
+        const key = line.slice(0, separator).trim();
+        const value = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, '');
+        return [key, value];
+      })
+  );
+}
+
+const localCredentials = readLocalCredentials();
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || localCredentials.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || localCredentials.GOOGLE_CLIENT_SECRET;
+
 if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.log('\n❌ ERRO: Abra o arquivo scripts/generate-token.js e preencha as variáveis CLIENT_ID e CLIENT_SECRET com os valores obtidos do Google Cloud Console.\n');
+  console.error('Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET em .env.google-drive.');
   process.exit(1);
 }
 
-const oauth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
-);
-
-// We need full drive access or drive.file access
-const scopes = [
-  'https://www.googleapis.com/auth/drive.file'
-];
-
+const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 const authUrl = oauth2Client.generateAuthUrl({
-  access_type: 'offline', // Request refresh token
-  scope: scopes,
-  prompt: 'consent' // Force to get refresh token every time during testing
+  access_type: 'offline',
+  scope: ['https://www.googleapis.com/auth/drive.file'],
+  prompt: 'consent',
 });
 
 const server = http.createServer(async (req, res) => {
   try {
-    const parsedUrl = url.parse(req.url, true);
-    if (parsedUrl.query.code) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<h1>Autorização concluída!</h1><p>Você pode fechar esta aba e voltar ao terminal para ver seu Refresh Token.</p>');
+    const requestUrl = new URL(req.url, REDIRECT_URI);
 
-      const { tokens } = await oauth2Client.getToken(parsedUrl.query.code);
-      console.log('\n======================================================');
-      console.log('✅ LOGIN EFETUADO COM SUCESSO!\n');
-      console.log('Copie e adicione as seguintes variáveis no seu arquivo .env:\n');
-      console.log(`GOOGLE_CLIENT_ID="${CLIENT_ID}"`);
-      console.log(`GOOGLE_CLIENT_SECRET="${CLIENT_SECRET}"`);
-      console.log(`GOOGLE_REFRESH_TOKEN="${tokens.refresh_token}"`);
-      console.log('======================================================\n');
-
-      server.close(() => {
-        process.exit(0);
-      });
+    if (requestUrl.pathname === '/favicon.ico') {
+      res.writeHead(204);
+      res.end();
+      return;
     }
-  } catch (e) {
-    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Erro ao processar o token.');
-    console.error('Erro ao obter token:', e.message);
-    process.exit(1);
+
+    const code = requestUrl.searchParams.get('code');
+    if (!code) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Callback OAuth nao encontrado.');
+      return;
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    if (!tokens.refresh_token) {
+      throw new Error('O Google nao retornou um refresh token.');
+    }
+
+    fs.writeFileSync(
+      ENV_PATH,
+      [
+        `GOOGLE_CLIENT_ID="${CLIENT_ID}"`,
+        `GOOGLE_CLIENT_SECRET="${CLIENT_SECRET}"`,
+        `GOOGLE_REFRESH_TOKEN="${tokens.refresh_token}"`,
+        '',
+      ].join('\n'),
+      { encoding: 'utf8', mode: 0o600 }
+    );
+
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<h1>Autorizacao concluida!</h1><p>O token foi salvo em .env.google-drive. Pode fechar esta aba.</p>');
+    console.log('Refresh token salvo em .env.google-drive.');
+    server.close(() => process.exit(0));
+  } catch (error) {
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`Erro ao processar o token: ${error.message}`);
+    }
+    console.error('Erro ao obter token:', error.message);
+    server.close(() => process.exit(1));
   }
-}).listen(PORT, () => {
-  const fs = require('fs');
-  const path = require('path');
-  const filePath = path.join(__dirname, 'auth-url.txt');
+});
 
-  fs.writeFileSync(filePath, authUrl, 'utf8');
-
-  console.log(`\n🌐 Servidor local rodando em http://localhost:${PORT}`);
-  console.log('\n======================================================');
-  console.log('✅ LINK DE AUTENTICAÇÃO SALVO COM SUCESSO!');
-  console.log('======================================================');
-  console.log(`\nAbra o arquivo abaixo para copiar o link sem quebras:`);
-  console.log(`scripts/auth-url.txt`);
-  console.log('\n======================================================\n');
+server.listen(PORT, () => {
+  fs.writeFileSync(path.join(__dirname, 'auth-url.txt'), authUrl, 'utf8');
+  console.log(`Servidor OAuth local: http://localhost:${PORT}`);
+  console.log('Link salvo em scripts/auth-url.txt.');
 });

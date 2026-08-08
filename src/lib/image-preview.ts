@@ -11,47 +11,81 @@ interface PreviewResult {
 }
 
 /**
- * Creates an SVG overlay with both the CLICS logo watermark and a protective grid.
- * The grid lines are drawn at every ~10% of the smallest image dimension,
- * making the overlay scale naturally regardless of image resolution.
+ * Creates a multi-layer SVG watermark overlay designed to be impossible to remove via AI inpainting:
+ *   1. Dense protective grid covering the entire image
+ *   2. Logo mosaic — logo tiled repeatedly across every region
+ *   3. Diagonal repeating brand text — covers every angle
+ *
+ * Because every region of the image is covered by overlapping layers, AI tools cannot
+ * reconstruct the original without hallucinating pixels from scratch.
  */
 async function createWatermarkAndGridOverlay(width: number, height: number): Promise<Buffer> {
   const logoPath = path.join(process.cwd(), "public", "logo_clics_branco.png");
   const logoBuffer = await readFile(logoPath);
   const logoMetadata = await sharp(logoBuffer).metadata();
   const logoAspectRatio = (logoMetadata.height ?? 1) / (logoMetadata.width ?? 1);
-  const logoWidth = Math.round(width * 0.96);
-  const logoHeight = Math.round(logoWidth * logoAspectRatio);
   const logoBase64 = logoBuffer.toString("base64");
 
-  // Evita divisão por zero ou loop infinito se dimensões forem inválidas
   const minDimension = Math.min(width, height) || 100;
-  // Densidade aumentada de 10% para 7% para desenhar mais linhas (grid mais fechado)
-  const step = Math.max(20, Math.round(minDimension * 0.07));
-  const gridLines: string[] = [];
 
-  // Vertical lines (espessura de 1.5px e opacidade de 45% para ficar bem marcante)
+  // ── CAMADA 1: Grid denso ─────────────────────────────────────────────────
+  const step = Math.max(12, Math.round(minDimension * 0.04));
+  const gridLines: string[] = [];
   for (let x = step; x < width; x += step) {
-    gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="1.5" stroke-opacity="0.45" />`);
+    gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="1.5" stroke-opacity="0.50" />`);
   }
-  // Horizontal lines
   for (let y = step; y < height; y += step) {
-    gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="1.5" stroke-opacity="0.45" />`);
+    gridLines.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="white" stroke-width="1.5" stroke-opacity="0.50" />`);
+  }
+
+  // ── CAMADA 2: Mosaico de logos ───────────────────────────────────────────
+  // Logo em grade: ~25% da largura por célula — cobre toda a imagem
+  const tileW = Math.round(width * 0.25);
+  const tileH = Math.round(tileW * logoAspectRatio);
+  const tiledLogos: string[] = [];
+  const colCount = Math.ceil(width / tileW) + 1;
+  const rowCount = Math.ceil(height / (tileH > 0 ? tileH : 1)) + 1;
+  for (let row = 0; row < rowCount; row++) {
+    for (let col = 0; col < colCount; col++) {
+      // Offset alternado em colunas ímpares para cobertura mais densa
+      const yOffset = col % 2 === 0 ? 0 : tileH / 2;
+      tiledLogos.push(
+        `<image href="data:image/png;base64,${logoBase64}" ` +
+        `width="${tileW}" height="${tileH}" ` +
+        `x="${col * tileW}" y="${row * tileH + yOffset - tileH * 0.1}" ` +
+        `opacity="0.80" preserveAspectRatio="xMidYMid meet" />`
+      );
+    }
+  }
+
+  // ── CAMADA 3: Texto diagonal repetido ───────────────────────────────────
+  // Rotacionado -35° e repetido em múltiplas faixas diagonais
+  const fontSize = Math.max(18, Math.round(minDimension * 0.035));
+  const textSpacing = Math.round(minDimension * 0.18);
+  const brand = "CLICS • CLICS • CLICS • CLICS • CLICS • CLICS •";
+  const diagonalTexts: string[] = [];
+  // Cobre diagonal de -height até width+height para não deixar cantos sem marca
+  for (let offset = -height; offset < width + height; offset += textSpacing) {
+    // Linha clara (branco) — visível em fundos escuros
+    diagonalTexts.push(
+      `<text x="${offset}" y="0" fill="white" fill-opacity="0.60" ` +
+      `font-size="${fontSize}" font-family="Arial Black, Arial, sans-serif" font-weight="900" ` +
+      `letter-spacing="6" transform="rotate(-35)">${brand}</text>`
+    );
+    // Linha escura (preto) — visível em fundos claros, offset de metade do passo
+    diagonalTexts.push(
+      `<text x="${offset + textSpacing / 2}" y="0" fill="black" fill-opacity="0.35" ` +
+      `font-size="${fontSize}" font-family="Arial Black, Arial, sans-serif" font-weight="900" ` +
+      `letter-spacing="6" transform="rotate(-35)">${brand}</text>`
+    );
   }
 
   return Buffer.from(`
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="transparent"/>
       ${gridLines.join("\n      ")}
-      <image
-        href="data:image/png;base64,${logoBase64}"
-        width="${logoWidth}"
-        height="${logoHeight}"
-        x="${(width - logoWidth) / 2}"
-        y="${(height - logoHeight) / 2}"
-        opacity="0.60"
-        preserveAspectRatio="xMidYMid meet"
-      />
+      ${tiledLogos.join("\n      ")}
+      ${diagonalTexts.join("\n      ")}
     </svg>
   `);
 }
@@ -73,7 +107,7 @@ export async function generatePhotoPreview(
   }
 ): Promise<PreviewResult> {
   const maxWidth = options?.maxWidth ?? 1200;
-  const quality = options?.quality ?? 75;
+  const quality = options?.quality ?? 45;
   const enableWatermark = options?.enableWatermark ?? false;
 
   const resizedImage = sharp(fileBuffer)
