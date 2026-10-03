@@ -11,7 +11,7 @@ interface PreviewResult {
 }
 
 /**
- * Creates a 6-layer SVG watermark overlay engineered to be impossible to remove via AI inpainting.
+ * Creates a layered SVG watermark for buyer previews.
  *
  * Layers (in render order):
  *   1. Orthogonal grid — horizontal + vertical lines every ~4% of image
@@ -21,10 +21,12 @@ interface PreviewResult {
  *   5. Diagonal text at -35° (white + black dual pass) — adapts to any background color
  *   6. Diagonal text at +20° — second angle ensures no clean scan direction exists
  *
- * With 6 overlapping independent patterns, no region of the image is clean enough
- * for AI tools to use as inpainting reference. Removal always produces visible artifacts.
+ * Repeated branding discourages reuse while subtle textures preserve photo detail.
+ * This is a visual deterrent, not a guarantee against AI removal.
  */
 async function createWatermarkAndGridOverlay(width: number, height: number): Promise<Buffer> {
+  // Keeps the preview protected without competing too much with the photo itself.
+  const watermarkOpacity = 0.35;
   const logoPath = path.join(process.cwd(), "public", "logo_clics_branco.png");
   const logoBuffer = await readFile(logoPath);
   const logoMetadata = await sharp(logoBuffer).metadata();
@@ -34,7 +36,7 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
   const minDimension = Math.min(width, height) || 100;
 
   // ── CAMADA 1: Grid ortogonal ─────────────────────────────────────────────
-  const step = Math.max(12, Math.round(minDimension * 0.04));
+  const step = Math.max(12, Math.round(minDimension * 0.07));
   const gridLines: string[] = [];
   for (let x = step; x < width; x += step) {
     gridLines.push(`<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="white" stroke-width="1.5" stroke-opacity="0.50" />`);
@@ -45,7 +47,7 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
 
   // ── CAMADA 2: Cross-hatch diagonal ±45° ─────────────────────────────────
   // Linhas diagonais cruzadas criam losangos — nenhuma célula retangular limpa fica disponível
-  const diagStep = Math.max(18, Math.round(minDimension * 0.055));
+  const diagStep = Math.max(18, Math.round(minDimension * 0.09));
   const diagLines: string[] = [];
   // +45° (canto superior-esquerdo → inferior-direito)
   for (let start = -height; start < width + height; start += diagStep) {
@@ -64,8 +66,8 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
 
   // ── CAMADA 3: Padrão de pontos (stipple) ─────────────────────────────────
   // Ruído de alta frequência: IA não consegue separar dos pixels da foto original
-  const dotSpacing = Math.max(6, Math.round(minDimension * 0.022));
-  const dotRadius = Math.max(1.5, Math.round(minDimension * 0.004));
+  const dotSpacing = Math.max(6, Math.round(minDimension * 0.035));
+  const dotRadius = Math.max(0.75, minDimension * 0.0015);
   const dotPatternDef = `
     <defs>
       <pattern id="stipple" x="0" y="0" width="${dotSpacing}" height="${dotSpacing}" patternUnits="userSpaceOnUse">
@@ -126,11 +128,17 @@ async function createWatermarkAndGridOverlay(width: number, height: number): Pro
   return Buffer.from(`
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="transparent"/>
-      ${dotPatternDef}
-      ${gridLines.join("\n      ")}
-      ${diagLines.join("\n      ")}
-      ${tiledLogos.join("\n      ")}
-      ${textLayers.join("\n      ")}
+      <g opacity="${watermarkOpacity}">
+        <g opacity="0.20">
+          ${dotPatternDef}
+          ${gridLines.join("\n          ")}
+          ${diagLines.join("\n          ")}
+        </g>
+        <g opacity="0.75">
+          ${tiledLogos.join("\n          ")}
+          ${textLayers.join("\n          ")}
+        </g>
+      </g>
     </svg>
   `);
 }
