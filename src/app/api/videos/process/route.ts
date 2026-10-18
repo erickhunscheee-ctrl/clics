@@ -14,7 +14,7 @@ export const maxDuration = 900;
 function makePreview(input: string, output: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const logo = path.join(process.cwd(), "public", "logo_clics_branco.png");
-    const filter = "[0:v]scale=w=1280:h=720:force_original_aspect_ratio=decrease,drawbox=x=(iw-420)/2:y=(ih-150)/2:w=420:h=150:color=black@0.28:t=fill[base];[1:v]scale=360:-1,colorchannelmixer=aa=0.75[mark];[base][mark]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2";
+    const filter = "[0:v]scale=w=1280:h=720:force_original_aspect_ratio=decrease:force_divisible_by=2,drawbox=x=(iw-420)/2:y=(ih-150)/2:w=420:h=150:color=black@0.28:t=fill[base];[1:v]scale=360:-1,colorchannelmixer=aa=0.75[mark];[base][mark]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2";
     const child = spawn("ffmpeg", ["-nostdin", "-y", "-i", input, "-loop", "1", "-i", logo, "-t", "20", "-filter_complex", filter, "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-movflags", "+faststart", output], { stdio: "ignore" });
     const timer = setTimeout(() => child.kill(), 240000);
     child.on("error", (error) => { clearTimeout(timer); reject(error); });
