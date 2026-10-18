@@ -5,6 +5,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable } from "node:stream";
 
 const s3Client = new S3Client({
   region: "auto",
@@ -115,6 +116,12 @@ export async function getObjectFromR2(key: string): Promise<Buffer> {
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
+}
+
+export async function getObjectStreamFromR2(key: string): Promise<Readable> {
+  const response = await s3Client.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  if (!response.Body) throw new Error("Arquivo não encontrado no R2.");
+  return response.Body as Readable;
 }
 
 /**

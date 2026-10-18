@@ -103,6 +103,26 @@ export async function uploadOriginalToDrive(
   return file.data.id!;
 }
 
+/** Envia um vídeo ao Drive sem carregar o arquivo inteiro na memória. */
+export async function uploadVideoStreamToDrive(
+  stream: Readable,
+  fileName: string,
+  mimeType: string,
+  albumId: string,
+  albumTitle: string
+): Promise<string> {
+  const drive = getDriveClient();
+  const folderId = await createAlbumFolder(albumId, albumTitle);
+  const file = await drive.files.create({
+    supportsAllDrives: true,
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType, body: stream },
+    fields: "id",
+  });
+  if (!file.data.id) throw new Error("O Drive não retornou o identificador do vídeo.");
+  return file.data.id;
+}
+
 /**
  * Get a readable stream of a file from Google Drive
  */

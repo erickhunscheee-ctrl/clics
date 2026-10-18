@@ -32,7 +32,7 @@ export default function VideosPage({ params }: { params: Promise<{ id: string }>
       setProgress("Enviando vídeo original...");
       const sent = await fetch(data.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
       if (!sent.ok) throw new Error("Falha no envio ao armazenamento. Confira a configuração CORS do R2.");
-      setProgress("Aplicando marca d'água à prévia...");
+      setProgress("Aplicando marca d'água e salvando o original no Drive...");
       const result = await fetch("/api/videos/process", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: id, key: data.key, fileName: file.name, contentType: file.type }) });
       const video = await result.json();
       if (!result.ok) throw new Error(video.message);
@@ -67,7 +67,7 @@ export default function VideosPage({ params }: { params: Promise<{ id: string }>
 
   return <div className="space-y-6 text-white">
     <Link href={`/dashboard/albuns/${id}`} className="text-sm text-zinc-400 hover:text-white">← Voltar ao álbum</Link>
-    <div><h1 className="text-3xl font-bold">Vídeos · {album?.title}</h1><p className="mt-2 text-sm text-zinc-400">A prévia pública recebe marca d&apos;água e mostra os primeiros 20 segundos. O comprador recebe o original após o pagamento.</p></div>
+    <div><h1 className="text-3xl font-bold">Vídeos · {album?.title}</h1><p className="mt-2 text-sm text-zinc-400">A prévia pública recebe marca d&apos;água e mostra os primeiros 20 segundos. O original fica no Google Drive e é liberado após o pagamento.</p></div>
     {error && <p role="alert" className="rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</p>}
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
       <h2 className="font-bold">Preço padrão por vídeo</h2>

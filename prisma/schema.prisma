@@ -117,6 +117,7 @@ model Video {
   originalFileName String
   originalMimeType String
   originalR2Key    String      @unique
+  driveFileId      String?
   previewR2Key     String
   previewUrl       String
   price            Int

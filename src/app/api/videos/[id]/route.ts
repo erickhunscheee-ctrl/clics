@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePhotographer } from "@/lib/auth";
 import { deletePreviewFromR2 } from "@/lib/r2";
+import { deleteFromDrive } from "@/lib/google-drive";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -33,6 +34,7 @@ export async function DELETE(_request: Request, { params }: Context) {
     await prisma.video.delete({ where: { id } });
     await deletePreviewFromR2(video.previewR2Key).catch(() => {});
     await deletePreviewFromR2(video.originalR2Key).catch(() => {});
+    if (video.driveFileId) await deleteFromDrive(video.driveFileId).catch(() => {});
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ message: "Não foi possível excluir o vídeo." }, { status: 500 });
