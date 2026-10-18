@@ -6,3 +6,7 @@ node_modules
 !.env.production.example
 *.log
 *.tsbuildinfo
+scripts
+docs
+.agents
+.idea
