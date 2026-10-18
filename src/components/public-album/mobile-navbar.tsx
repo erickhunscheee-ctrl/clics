@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Home, Images, Heart, User, Download } from "lucide-react";
-import { useLoading } from "@/components/ui/loading-provider";
 
 function NavIcon({
   icon: Icon,
@@ -61,7 +60,6 @@ function SheetButton({
 export function MobileNavbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { startLoading } = useLoading();
 
   const albumsOpen = searchParams.get("albums") === "true";
   const favoritesOpen = searchParams.get("favorites") === "true";
@@ -70,7 +68,6 @@ export function MobileNavbar() {
     profileOpen && searchParams.get("profileTab") === "pedidos";
 
   const openSheet = (key: "albums" | "favorites" | "profile" | "purchases") => {
-    startLoading();
     const current =
       key === "purchases"
         ? purchasesOpen

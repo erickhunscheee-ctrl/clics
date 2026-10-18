@@ -90,21 +90,17 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
     [clearSafetyTimeout, stopLoading]
   );
 
-  // Listen for clicks on navigable elements to start loading
+  // Start the global loader only for page navigation links.
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      const actionable = target.closest(
-        "button, a, [role='button'], input[type='submit']"
-      );
-      if (!actionable) return;
-      if (actionable.matches("[disabled], [aria-disabled='true']")) return;
-      if (actionable.closest("[data-loading-ignore='true']")) return;
+      const actionable = target.closest("a[href]") as HTMLAnchorElement | null;
+      if (!actionable || actionable.closest("[data-loading-ignore='true']")) return;
+      if (actionable.hasAttribute("download") || (actionable.target && actionable.target !== "_self")) return;
 
-      // Only trigger for <a> tags that have an href pointing to a different page
-      // (avoid triggering for buttons that don't navigate)
       if (actionable.tagName === "A") {
         const href = (actionable as HTMLAnchorElement).href;
         const currentUrl = window.location.href;

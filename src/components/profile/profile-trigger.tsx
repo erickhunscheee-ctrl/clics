@@ -1,7 +1,6 @@
 "use client";
 
 import { User } from "lucide-react";
-import { useLoading } from "@/components/ui/loading-provider";
 
 interface ProfileTriggerProps {
   avatarUrl?: string | null;
@@ -16,10 +15,7 @@ export function ProfileTrigger({
   className = "",
   iconSize = 22,
 }: ProfileTriggerProps) {
-  const { startLoading } = useLoading();
-
   const openProfile = () => {
-    startLoading();
     const params = new URLSearchParams(window.location.search);
     params.delete("albums");
     params.delete("favorites");
