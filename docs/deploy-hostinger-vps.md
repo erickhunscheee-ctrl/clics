@@ -133,6 +133,8 @@ pm2 restart clics --update-env
 
 Para enviar vídeos, configure o CORS do bucket R2 para permitir `PUT` da origem da plataforma com o cabeçalho `Content-Type`. As prévias são geradas pelo FFmpeg no servidor, com o logo da Clics gravado nos primeiros 20 segundos. O arquivo original é enviado diretamente ao R2 e liberado por URL assinada após o pagamento.
 
+Se o deploy usar Docker, passe `.env.production` como segredo de build (`docker build --secret id=env_production,src=.env.production ...`). O arquivo fica fora da imagem por meio do `.dockerignore`; configure as variáveis de runtime no serviço Docker/Easypanel.
+
 ## Verificacoes
 
 ```bash

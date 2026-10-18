@@ -15,7 +15,7 @@ ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
-RUN npm run build
+RUN --mount=type=secret,id=env_production,target=/app/.env.production,required=false npm run build
 
 EXPOSE 3000
 
