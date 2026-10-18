@@ -132,5 +132,7 @@ export default async function PublicAlbumPage({ params }: PublicAlbumPageProps) 
     promotionDiscountBps: promotion?.promotionDiscountBps ?? 0,
   };
 
-  return <PhotoGallery album={safeAlbum} photos={safeAlbum.photos} />;
+  const videos = await prisma.video.findMany({ where: { albumId: album.id, status: "ACTIVE" }, select: { id: true, originalFileName: true, previewUrl: true, price: true }, orderBy: { createdAt: "desc" } });
+
+  return <PhotoGallery album={safeAlbum} photos={safeAlbum.photos} videos={videos} />;
 }

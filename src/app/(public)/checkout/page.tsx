@@ -452,7 +452,8 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           albumId,
-          photoIds: items.map((i) => i.id),
+          photoIds: items.filter((i) => i.type !== "video").map((i) => i.id),
+          videoIds: items.filter((i) => i.type === "video").map((i) => i.id),
           customerPhone: phone,
           customerDocument: document || null,
           paymentMethod: "PIX",
@@ -527,7 +528,8 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           albumId,
-          photoIds: items.map((i) => i.id),
+          photoIds: items.filter((i) => i.type !== "video").map((i) => i.id),
+          videoIds: items.filter((i) => i.type === "video").map((i) => i.id),
           customerPhone: phone,
           customerDocument: document || null,
           paymentMethod: "CREDIT_CARD",
@@ -578,7 +580,7 @@ function CheckoutContent() {
           Carrinho Vazio
         </h2>
         <p className="max-w-sm mx-auto mb-6 text-sm" style={{ color: "#6b7280" }}>
-          Você não possui nenhuma foto no carrinho. Retorne à galeria do álbum para selecionar suas fotos.
+          Você não possui itens no carrinho. Retorne ao álbum para selecionar fotos ou vídeos.
         </p>
         <Link
           href={galleryHref}
@@ -628,7 +630,7 @@ function CheckoutContent() {
               >
                 Finalizar Compra
               </h1>
-              <p className="text-[11px]" style={{ color: "#9ca3af" }}>Escolha a forma de pagamento para receber as fotos.</p>
+              <p className="text-[11px]" style={{ color: "#9ca3af" }}>Escolha a forma de pagamento para receber seus arquivos.</p>
             </div>
           </div>
           {/* Badge segurança */}
@@ -897,7 +899,7 @@ function CheckoutContent() {
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3" style={{ borderBottom: "1px solid #f3f4f6", paddingBottom: "12px" }}>
                   <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0" style={{ border: "1px solid #e5e7eb" }}>
-                    <img src={item.previewUrl} alt={item.originalFileName} className="h-full w-full object-cover" />
+                    {item.type === "video" ? <video src={item.previewUrl} className="h-full w-full object-cover" /> : <img src={item.previewUrl} alt={item.originalFileName} className="h-full w-full object-cover" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate" style={{ color: "#061337" }}>{item.originalFileName}</p>
@@ -909,7 +911,7 @@ function CheckoutContent() {
 
             <div className="space-y-3 pt-1" style={{ borderTop: "1px solid #e5e7eb" }}>
               <div className="flex justify-between items-center text-sm">
-                <span style={{ color: "#6b7280" }}>Fotos selecionadas</span>
+                <span style={{ color: "#6b7280" }}>Itens selecionados</span>
                 <span className="font-semibold" style={{ color: "#061337" }}>{items.length}</span>
               </div>
               {promotionApplied && (

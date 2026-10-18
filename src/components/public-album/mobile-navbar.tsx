@@ -8,51 +8,14 @@ import { useLoading } from "@/components/ui/loading-provider";
 function NavIcon({
   icon: Icon,
   isActive,
-  circled,
 }: {
   icon: typeof Home;
   isActive: boolean;
-  circled?: boolean;
 }) {
-  if (circled) {
-    return (
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center border-[1.5px] transition-all"
-        style={
-          isActive
-            ? {
-                borderColor: "transparent",
-                background:
-                  "linear-gradient(white, white) padding-box, linear-gradient(90deg, #159BEF, #7B3FF2) border-box",
-              }
-            : { borderColor: "#061337" }
-        }
-      >
-        <Icon
-          size={16}
-          strokeWidth={1.8}
-          style={{ color: isActive ? "#159BEF" : "#061337" }}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-8 h-8 flex items-center justify-center">
-      <Icon
-        size={19}
-        strokeWidth={1.8}
-        style={isActive ? { stroke: "url(#navGradient)" } : { color: "#061337" }}
-      />
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <linearGradient id="navGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#159BEF" />
-            <stop offset="100%" stopColor="#7B3FF2" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
+    <span className={`flex h-8 w-10 items-center justify-center rounded-lg ${isActive ? "bg-sky-50 text-sky-700" : "text-slate-500"}`}>
+      <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+    </span>
   );
 }
 
@@ -60,15 +23,7 @@ function NavLabel({ label, isActive }: { label: string; isActive: boolean }) {
   return (
     <span
       className="text-[10px] font-semibold leading-none"
-      style={
-        isActive
-          ? {
-              background: "linear-gradient(90deg, #159BEF, #7B3FF2)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }
-          : { color: "#061337" }
-      }
+      style={{ color: isActive ? "#0369a1" : "#64748b" }}
     >
       {label}
     </span>
@@ -91,21 +46,11 @@ function SheetButton({
   return (
     <button
       onClick={onToggle}
-      className="flex flex-col items-center gap-1 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
+      className="flex flex-col items-center gap-1 min-w-[52px] min-h-12 py-1 transition-opacity active:opacity-70"
       aria-label={ariaLabel}
+      aria-expanded={isOpen}
     >
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center border-[1.5px] transition-all"
-        style={
-          isOpen
-            ? {
-                borderColor: "transparent",
-                background:
-                  "linear-gradient(white, white) padding-box, linear-gradient(90deg, #159BEF, #7B3FF2) border-box",
-              }
-            : { borderColor: "#061337" }
-        }
-      >
+      <div className={`flex h-8 w-10 items-center justify-center rounded-lg ${isOpen ? "bg-sky-50" : ""}`}>
         {children}
       </div>
       <NavLabel label={label} isActive={isOpen} />
@@ -150,7 +95,7 @@ export function MobileNavbar() {
     window.history.pushState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
-  const isHomeActive = pathname === "/";
+  const isHomeActive = pathname === "/" && !albumsOpen && !favoritesOpen && !profileOpen;
 
   return (
     <nav
@@ -159,14 +104,14 @@ export function MobileNavbar() {
       data-loading-ignore="true"
     >
       <div
-        className="bg-white px-1 py-1.5"
-        style={{ boxShadow: "0 4px 32px 0 rgba(6,19,55,0.12)" }}
+        className="border-t border-slate-200 bg-white px-1 pt-1.5"
+        style={{ paddingBottom: "max(0.375rem, env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-center justify-around">
           {/* Início — direct link */}
           <Link
             href="/"
-            className="flex flex-col items-center gap-1 min-w-[52px] py-0.5 transition-opacity active:opacity-70"
+            className="flex flex-col items-center gap-1 min-w-[52px] min-h-12 py-1 transition-opacity active:opacity-70"
             aria-current={isHomeActive ? "page" : undefined}
           >
             <NavIcon icon={Home} isActive={isHomeActive} />

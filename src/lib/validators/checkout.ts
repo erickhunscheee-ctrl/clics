@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const checkoutSchema = z.object({
   albumId: z.string().cuid(),
-  photoIds: z.array(z.string().cuid()).min(1, "Selecione pelo menos uma foto"),
+  photoIds: z.array(z.string().cuid()),
+  videoIds: z.array(z.string().cuid()).default([]),
   customerPhone: z.string().optional().nullable(),
   customerDocument: z.string().optional().nullable(),
   paymentMethod: z.enum(["PIX", "CREDIT_CARD"]).default("PIX"),

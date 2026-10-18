@@ -81,6 +81,20 @@ export async function generatePresignedUploadUrl(
   return getSignedUrl(s3Client, command, { expiresIn });
 }
 
+export async function generatePresignedDownloadUrl(key: string, expiresIn = 300, downloadName?: string): Promise<string> {
+  return getSignedUrl(s3Client, new GetObjectCommand({ Bucket: BUCKET, Key: key, ...(downloadName ? { ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}` } : {}) }), { expiresIn });
+}
+
+export async function getObjectSizeInR2(key: string): Promise<number | null> {
+  try {
+    const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+    const result = await s3Client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return result.ContentLength ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Get an object (file buffer) from R2
  */

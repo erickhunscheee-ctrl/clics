@@ -29,6 +29,7 @@ export async function GET(request: Request, { params }: Params) {
         location: true,
         coverImageUrl: true,
         defaultPhotoPrice: true,
+        defaultVideoPrice: true,
         status: true,
         isFeatured: true,
         promotionEnabled: true,
@@ -45,6 +46,7 @@ export async function GET(request: Request, { params }: Params) {
             status: true,
           },
         },
+        videos: { orderBy: { createdAt: "desc" } },
       },
     });
 

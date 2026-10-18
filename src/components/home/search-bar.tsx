@@ -1,76 +1,38 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Search, X, Loader2 } from "lucide-react";
 
-interface SearchBarProps {
-  placeholder?: string;
-  className?: string;
+interface SearchBarProps { placeholder?: string; className?: string }
+
+export function SearchBar(props: SearchBarProps) {
+  const params = useSearchParams();
+  const initialQuery = params.get("search") || "";
+  return <SearchForm key={initialQuery} initialQuery={initialQuery} {...props} />;
 }
 
-export function SearchBar({ placeholder = "Buscar fotos incríveis...", className = "" }: SearchBarProps) {
+function SearchForm({ initialQuery, placeholder = "Buscar evento, local ou fotógrafo", className = "" }: SearchBarProps & { initialQuery: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("search") || "");
+  const [query, setQuery] = useState(initialQuery);
   const [isPending, startTransition] = useTransition();
 
-  // Atualiza o estado se o parâmetro de busca na URL mudar externamente
-  useEffect(() => {
-    setQuery(searchParams.get("search") || "");
-  }, [searchParams]);
-
-  // Função para executar a busca
-  const handleSearch = (value: string) => {
+  function search(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("search", value);
-    } else {
-      params.delete("search");
-    }
-    
-    startTransition(() => {
-      router.push(`/?${params.toString()}`);
-    });
-  };
-
-  // Efeito para debounce de 400ms na digitação
-  useEffect(() => {
-    const delayDebounceId = setTimeout(() => {
-      const currentParam = searchParams.get("search") || "";
-      if (query !== currentParam) {
-        handleSearch(query);
-      }
-    }, 400);
-
-    return () => clearTimeout(delayDebounceId);
-  }, [query]);
-
-  const handleClear = () => {
-    setQuery("");
-    handleSearch("");
-  };
+    if (value.trim()) params.set("search", value.trim());
+    else params.delete("search");
+    startTransition(() => router.push(`/?${params.toString()}#albuns`, { scroll: false }));
+  }
 
   return (
-    <div className={`relative flex items-center bg-[#F6F8FC] rounded-full px-4 py-2.5 border border-gray-200 transition-all focus-within:border-[#159BEF] focus-within:ring-2 focus-within:ring-[#159BEF]/10 ${className}`}>
-      <Search size={18} style={{ color: "#9ca3af" }} className="flex-shrink-0 mr-2.5" />
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400 w-full text-[#061337] pr-6"
-      />
-      {query && (
-        <button
-          onClick={handleClear}
-          className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-[#061337] transition-colors"
-          type="button"
-          aria-label="Limpar busca"
-        >
-          <X size={14} />
-        </button>
-      )}
-    </div>
+    <form role="search" aria-label="Buscar álbuns" aria-busy={isPending} data-loading-ignore="true" onSubmit={(event) => { event.preventDefault(); search(query); }} className={`flex min-h-14 items-center gap-2 rounded-xl border border-slate-300 bg-white p-1.5 pl-4 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-100 ${className}`}>
+      <Search size={19} className="shrink-0 text-slate-400" aria-hidden="true" />
+      <input type="search" aria-label="Evento, local ou fotógrafo" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 [&::-webkit-search-cancel-button]:hidden" />
+      {query && <button type="button" aria-label="Limpar busca" onClick={() => { setQuery(""); search(""); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={17} /></button>}
+      <button type="submit" disabled={isPending} className="flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">
+        {isPending ? <Loader2 size={18} className="animate-spin" aria-label="Buscando" /> : "Buscar"}
+      </button>
+    </form>
   );
 }

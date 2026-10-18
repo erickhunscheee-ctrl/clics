@@ -38,7 +38,7 @@ Importante: as variaveis `NEXT_PUBLIC_*` sao embutidas no bundle durante `npm ru
 
 ```bash
 sudo apt update
-sudo apt install -y nginx git curl build-essential
+sudo apt install -y nginx git curl build-essential ffmpeg
 
 # Instale Node via nvm, fnm ou NodeSource. Exemplo com NodeSource 22:
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -130,6 +130,8 @@ npm run build
 npx prisma migrate deploy
 pm2 restart clics --update-env
 ```
+
+Para enviar vídeos, configure o CORS do bucket R2 para permitir `PUT` da origem da plataforma com o cabeçalho `Content-Type`. As prévias são geradas pelo FFmpeg no servidor, com o logo da Clics gravado nos primeiros 20 segundos. O arquivo original é enviado diretamente ao R2 e liberado por URL assinada após o pagamento.
 
 ## Verificacoes
 

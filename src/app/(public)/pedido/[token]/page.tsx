@@ -40,6 +40,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
           photo: {
             select: { id: true, originalFileName: true, previewUrl: true, price: true },
           },
+          video: { select: { id: true, originalFileName: true, previewUrl: true, price: true } },
         },
       },
     },
@@ -63,6 +64,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                 photo: {
                   select: { id: true, originalFileName: true, previewUrl: true, price: true },
                 },
+                video: { select: { id: true, originalFileName: true, previewUrl: true, price: true } },
               },
             },
           },
@@ -245,7 +247,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                 }}
               >
                 <ShoppingBag size={14} style={{ color: "#159BEF" }} />
-                Fotos do Pedido ({order.items.length})
+                Itens do pedido ({order.items.length})
               </h2>
 
               <div className="space-y-3">
@@ -260,15 +262,11 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                         className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0"
                         style={{ border: "1px solid #e5e7eb" }}
                       >
-                        <img
-                          src={item.photo.previewUrl}
-                          alt={item.photo.originalFileName}
-                          className="h-full w-full object-cover"
-                        />
+                        {item.video ? <video src={item.video.previewUrl} className="h-full w-full object-cover" /> : <img src={item.photo!.previewUrl} alt={item.photo!.originalFileName} className="h-full w-full object-cover" />}
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold truncate max-w-[180px] sm:max-w-xs" style={{ color: "#061337" }}>
-                          {item.photo.originalFileName}
+                          {item.video?.originalFileName ?? item.photo?.originalFileName}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: "#6b7280" }}>
                           {formatCurrency(item.price)}
@@ -283,7 +281,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
 
                     {order.status === "PAID" && !isExpired && (
                       <a
-                        href={`/api/download/${item.photoId}?token=${token}`}
+                        href={item.videoId ? `/api/download/video/${item.videoId}?token=${token}` : `/api/download/${item.photoId}?token=${token}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex h-10 w-10 items-center justify-center rounded-xl transition-all hover:-translate-y-0.5 flex-shrink-0"
@@ -292,7 +290,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                           boxShadow: "0 4px 12px rgba(21,155,239,0.3)",
                           color: "white",
                         }}
-                        title="Baixar foto original"
+                        title={item.videoId ? "Baixar vídeo original" : "Baixar foto original"}
                         download
                       >
                         <Download size={16} />
@@ -342,7 +340,7 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
               {/* Valores */}
               <div className="space-y-2 pt-3" style={{ borderTop: "1px solid #e5e7eb" }}>
                 <div className="flex justify-between text-xs" style={{ color: "#6b7280" }}>
-                  <span>Fotos ({order.items.length})</span>
+                  <span>Itens ({order.items.length})</span>
                   <span>{formatCurrency(order.totalAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid #e5e7eb" }}>

@@ -43,47 +43,44 @@ export default async function BuyerHomePage() {
   const paidOrders = orders.filter((order) => order.status === "PAID").length;
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] px-4 py-8 text-[#061337]">
+    <main className="buyer-area min-h-screen bg-[#fafafa] px-4 py-8 text-[#061337]">
       <div className="mx-auto max-w-6xl space-y-8">
-        <header className="rounded-[2rem] bg-slate-950 p-6 text-white shadow-xl md:p-8">
+        <header className="border-b border-slate-200 pb-8 text-slate-900">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <Link href="/" className="text-sm font-semibold text-sky-300 hover:text-sky-200">
-                Voltar para albuns
+              <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-950">
+                ← Explorar álbuns
               </Link>
-              <h1 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">
-                Minha area de comprador
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
+                Minhas fotos e compras
               </h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                Acompanhe seu carrinho, pagamentos e albuns comprados sem entrar no painel do fotografo.
+              <p className="mt-3 max-w-2xl text-sm text-slate-500">
+                Encontre suas fotos compradas, acompanhe os pedidos e acesse seus downloads.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white/10 p-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-3">
                 <p className="text-2xl font-black">{orders.length}</p>
-                <p className="text-xs text-slate-300">Pedidos</p>
+                <p className="text-xs text-slate-500">Pedidos</p>
               </div>
-              <div className="rounded-2xl bg-white/10 p-4">
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-3">
                 <p className="text-2xl font-black">{paidOrders}</p>
-                <p className="text-xs text-slate-300">Pagos</p>
+                <p className="text-xs text-slate-500">Pagos</p>
               </div>
-              <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-2xl font-black">{user.role}</p>
-                <p className="text-xs text-slate-300">Perfil</p>
-              </div>
+
             </div>
           </div>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-500">
                   Compras
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  Albuns e pagamentos
+                  Meus pedidos
                 </h2>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
@@ -96,7 +93,7 @@ export default async function BuyerHomePage() {
                 <Camera className="mx-auto text-slate-400" size={34} />
                 <h3 className="mt-4 text-lg font-bold text-slate-950">Nenhuma compra ainda</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                  Quando voce finalizar um pagamento, os albuns e downloads aparecem aqui.
+                  Depois da compra, seus álbuns e downloads ficam reunidos aqui.
                 </p>
                 <Link
                   href="/"
@@ -110,7 +107,7 @@ export default async function BuyerHomePage() {
                 {orders.map((order) => (
                   <article
                     key={order.id}
-                    className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:grid-cols-[96px,minmax(0,1fr),auto]"
+                    className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:grid-cols-[96px_minmax(0,1fr)_auto]"
                   >
                     <img
                       src={order.album.coverImageUrl || "/placeholder.jpg"}
@@ -126,7 +123,7 @@ export default async function BuyerHomePage() {
                       </h3>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
-                          {order._count.items} fotos
+                          {order._count.items} itens
                         </span>
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
                           {formatCurrency(order.totalAmount)}
@@ -148,7 +145,7 @@ export default async function BuyerHomePage() {
                         href={`/album/${order.album.slug}`}
                         className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
                       >
-                        Ver album
+                        Ver álbum
                       </Link>
                     </div>
                   </article>

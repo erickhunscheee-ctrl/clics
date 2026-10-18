@@ -405,6 +405,11 @@ export default function EditAlbumPage({ params }: EditAlbumPageProps) {
         </div>
 
         {/* Gerenciamento de Fotos */}
+        <div className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-2xl space-y-4">
+          <h3 className="text-lg font-bold text-white">Vídeos do álbum</h3>
+          <p className="text-xs text-zinc-400">Envie vídeos, aplique a marca d&apos;água na prévia e defina preços próprios.</p>
+          <Link href={`/dashboard/albuns/${album.id}/videos`} className="flex items-center justify-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white">Gerenciar e enviar vídeos</Link>
+        </div>
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-6 rounded-2xl h-fit space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-bold text-white">Fotos do Álbum</h3>

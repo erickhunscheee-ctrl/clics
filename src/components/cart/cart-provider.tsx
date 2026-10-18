@@ -5,6 +5,7 @@ import { calculatePromotionTotal, type PromotionConfig } from "@/lib/promotions"
 
 export interface CartItem {
   id: string;
+  type?: "photo" | "video";
   originalFileName: string;
   previewUrl: string;
   price: number; // em centavos
@@ -133,10 +134,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     discountAmount,
     totalAmount,
     applied: promotionApplied,
-  } = calculatePromotionTotal(
-    items.map((item) => item.price),
-    albumPromotion
-  );
+  } = calculatePromotionTotal(items.filter((item) => item.type !== "video").map((item) => item.price), albumPromotion);
+  const videoTotal = items.filter((item) => item.type === "video").reduce((sum, item) => sum + item.price, 0);
 
   return (
     <CartContext.Provider
@@ -149,9 +148,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         clearCart,
         isInCart,
-        subtotalAmount,
+        subtotalAmount: subtotalAmount + videoTotal,
         discountAmount,
-        totalAmount,
+        totalAmount: totalAmount + videoTotal,
         promotionApplied,
       }}
     >

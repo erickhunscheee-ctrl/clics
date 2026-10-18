@@ -75,7 +75,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/50">
                   <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                     <span className="text-xs font-bold text-[#061337]/60">
-                      {items.length} {items.length === 1 ? "foto selecionada" : "fotos selecionadas"}
+                      {items.length} {items.length === 1 ? "item selecionado" : "itens selecionados"}
                     </span>
                     <button
                       onClick={clearCart}
@@ -88,11 +88,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     {items.map((item) => (
                       <div key={item.id} className="flex py-4 gap-4">
                         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-                          <img
-                            src={item.previewUrl}
-                            alt={item.originalFileName}
-                            className="h-full w-full object-cover"
-                          />
+                          {item.type === "video" ? <video src={item.previewUrl} className="h-full w-full object-cover" /> : <img src={item.previewUrl} alt={item.originalFileName} className="h-full w-full object-cover" />}
                         </div>
 
                         <div className="flex flex-1 flex-col justify-between py-0.5">

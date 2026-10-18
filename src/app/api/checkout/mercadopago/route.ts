@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     const { 
       albumId, 
       photoIds, 
+      videoIds,
       customerPhone, 
       customerDocument, 
       paymentMethod,
@@ -43,9 +44,9 @@ export async function POST(request: Request) {
     const customerName = user.name || user.email.split("@")[0];
     const customerEmail = user.email;
 
-    if (photoIds.length === 0) {
+    if (photoIds.length + videoIds.length === 0) {
       return NextResponse.json(
-        { message: "Selecione pelo menos uma foto para realizar a compra." },
+        { message: "Selecione pelo menos uma foto ou vídeo para realizar a compra." },
         { status: 400 }
       );
     }
@@ -102,8 +103,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const videos = await prisma.video.findMany({ where: { id: { in: videoIds }, albumId, status: "ACTIVE" } });
+    if (videos.length !== videoIds.length) {
+      return NextResponse.json({ message: "Alguns vídeos selecionados não estão disponíveis." }, { status: 400 });
+    }
+
     // Calcula o total em centavos com a promocao vigente do album.
-    const { totalAmount } = calculatePromotionTotal(
+    const { totalAmount: photoTotal } = calculatePromotionTotal(
       photos.map((photo) => photo.price),
       {
         promotionEnabled: "promotionEnabled" in album ? album.promotionEnabled : false,
@@ -111,6 +117,7 @@ export async function POST(request: Request) {
         promotionDiscountBps: "promotionDiscountBps" in album ? album.promotionDiscountBps : 0,
       }
     );
+    const totalAmount = photoTotal + videos.reduce((sum, video) => sum + video.price, 0);
 
     // Gera um token de acesso para o pedido com validade de 30 dias
     const accessToken = generateAccessToken();
@@ -142,6 +149,7 @@ export async function POST(request: Request) {
           price: photo.price,
         })),
       });
+      if (videos.length) await tx.orderItem.createMany({ data: videos.map((video) => ({ orderId: newOrder.id, videoId: video.id, price: video.price })) });
 
       return newOrder;
     });

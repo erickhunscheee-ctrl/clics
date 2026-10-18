@@ -61,6 +61,7 @@ type OrderWithDetails = Prisma.OrderGetPayload<{
     };
     items: {
       include: {
+        video: { select: { id: true; originalFileName: true; previewUrl: true; price: true } };
         photo: {
           select: {
             id: true;
@@ -301,20 +302,18 @@ function SummaryCard({
 }
 
 function SoldPhotoCard({ item }: { item: OrderPhotoItem }) {
+  const media = item.video ?? item.photo;
+  if (!media) return null;
   return (
     <a
-      href={item.photo.previewUrl}
+      href={media.previewUrl}
       target="_blank"
       rel="noreferrer"
       className="group grid min-w-0 grid-cols-[6rem_1fr] gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 transition hover:border-violet-500/30 hover:bg-violet-500/5 sm:grid-cols-[7rem_1fr] lg:grid-cols-1 lg:p-3"
     >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-zinc-900 sm:aspect-[4/3] lg:aspect-[4/3]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.photo.previewUrl}
-          alt={item.photo.originalFileName}
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-        />
+        {item.video ? <video src={media.previewUrl} className="h-full w-full object-cover" /> : <img src={media.previewUrl} alt={media.originalFileName} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />}
         <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md border border-white/10 bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
           <Eye size={10} />
           Abrir
@@ -322,10 +321,10 @@ function SoldPhotoCard({ item }: { item: OrderPhotoItem }) {
       </div>
       <div className="min-w-0 self-center lg:self-auto">
         <p className="line-clamp-2 text-xs font-semibold leading-snug text-zinc-200">
-          {item.photo.originalFileName}
+          {media.originalFileName}
         </p>
         <p className="mt-1 truncate text-[11px] text-zinc-500">
-          {item.photo.folder?.name || item.photo.album.title || "Sem pasta"}
+          {item.photo?.folder?.name || item.photo?.album.title || "Vídeo"}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="inline-flex items-center rounded-md border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 font-bold text-emerald-300">
@@ -412,6 +411,7 @@ export default async function OrdersAdminPage({
       { mercadoPagoPaymentId: { contains: query, mode: "insensitive" } },
       { album: { title: { contains: query, mode: "insensitive" } } },
       { items: { some: { photo: { originalFileName: { contains: query, mode: "insensitive" } } } } },
+      { items: { some: { video: { originalFileName: { contains: query, mode: "insensitive" } } } } },
     ];
   }
 
@@ -458,6 +458,7 @@ export default async function OrdersAdminPage({
     items: {
       orderBy: { createdAt: "asc" as const },
       include: {
+        video: { select: { id: true, originalFileName: true, previewUrl: true, price: true } },
         photo: {
           select: {
             id: true,

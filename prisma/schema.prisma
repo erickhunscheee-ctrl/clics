@@ -64,6 +64,7 @@ model Album {
   location          String?
   coverImageUrl     String?
   defaultPhotoPrice Int         @default(0) // Price in centavos (BRL)
+  defaultVideoPrice Int         @default(0)
   isFeatured        Boolean     @default(false)
   promotionEnabled  Boolean     @default(false)
   promotionMinPhotos Int        @default(0)
@@ -74,6 +75,7 @@ model Album {
 
   photographer User    @relation(fields: [photographerId], references: [id], onDelete: Cascade)
   photos       Photo[]
+  videos       Video[]
   folders      AlbumFolder[]
   orders       Order[]
 
@@ -107,6 +109,26 @@ model Photo {
   @@index([albumId])
   @@index([folderId])
   @@map("photos")
+}
+
+model Video {
+  id               String      @id @default(cuid())
+  albumId          String
+  originalFileName String
+  originalMimeType String
+  originalR2Key    String      @unique
+  previewR2Key     String
+  previewUrl       String
+  price            Int
+  status           PhotoStatus @default(ACTIVE)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  album      Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([albumId])
+  @@map("videos")
 }
 
 model AlbumFolder {
@@ -154,16 +176,19 @@ model Order {
 model OrderItem {
   id               String    @id @default(cuid())
   orderId          String
-  photoId          String
+  photoId          String?
+  videoId          String?
   price            Int       // Snapshot do preço no momento da compra (centavos)
   downloadCount    Int       @default(0)
   lastDownloadedAt DateTime?
   createdAt        DateTime  @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  photo Photo @relation(fields: [photoId], references: [id])
+  photo Photo? @relation(fields: [photoId], references: [id])
+  video Video? @relation(fields: [videoId], references: [id])
 
   @@unique([orderId, photoId])
+  @@unique([orderId, videoId])
   @@map("order_items")
 }
 

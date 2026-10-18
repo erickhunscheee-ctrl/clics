@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { formatCurrency } from "@/lib/money";
-import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight, Folder, ShieldAlert } from "lucide-react";
+import { ShoppingCart, Eye, Check, X, Calendar, MapPin, ChevronLeft, ChevronRight, ArrowRight, Folder, ShieldAlert, Search, Grid2X2, LayoutGrid, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { FavoriteButton } from "@/components/favorites/favorite-button";
 
@@ -41,12 +41,17 @@ interface Album {
 interface PhotoGalleryProps {
   album: Album;
   photos: Photo[];
+  videos: Omit<Photo, "folderId">[];
 }
 
-export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
+export function PhotoGallery({ album, photos, videos }: PhotoGalleryProps) {
   const { items, addToCart, removeFromCart, isInCart, subtotalAmount, discountAmount, totalAmount, promotionApplied } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeFolderId, setActiveFolderId] = useState<string | null>("all");
+  const [photoQuery, setPhotoQuery] = useState("");
+  const [selectedOnly, setSelectedOnly] = useState(false);
+  const [largePhotos, setLargePhotos] = useState(false);
+  const viewerRef = useRef<HTMLDialogElement>(null);
   const [printBlocked, setPrintBlocked] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const promotion = {
@@ -89,14 +94,32 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
 
   const hasUnfolderedPhotos = photos.some((photo) => photo.folderId === null);
-  const visiblePhotos =
-    activeFolderId === "all"
-      ? photos
-      : photos.filter((photo) => photo.folderId === activeFolderId);
+  const visiblePhotos = photos.filter((photo) =>
+    (activeFolderId === "all" || photo.folderId === activeFolderId) &&
+    (!selectedOnly || isInCart(photo.id)) &&
+    photo.originalFileName.toLocaleLowerCase("pt-BR").includes(photoQuery.trim().toLocaleLowerCase("pt-BR"))
+  );
   const activePhoto = activePhotoIndex !== null ? visiblePhotos[activePhotoIndex] : null;
+  const viewerOpen = activePhotoIndex !== null && !!activePhoto;
+  const selectedCount = [...photos, ...videos].filter((item) => isInCart(item.id)).length;
+
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const dialog = viewerRef.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [viewerOpen]);
 
   const handleToggleCart = (photo: Photo) => {
     if (isInCart(photo.id)) {
+      if (selectedOnly) setActivePhotoIndex(null);
       removeFromCart(photo.id);
     } else {
       addToCart(album.id, {
@@ -124,7 +147,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
 
   return (
     <div
-      className="min-h-screen bg-[#F6F8FC] text-[#061337] selection:bg-[#7B3FF2] selection:text-white"
+      className="album-gallery min-h-screen bg-[#fafafa] text-slate-900 selection:bg-sky-100"
       style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
       // Block drag-to-save on all images in this container
       onDragStart={(e) => e.preventDefault()}
@@ -168,259 +191,178 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
         }
       `}</style>
       {/* Back to Albums Header */}
-      <div className="bg-white border-b border-slate-100 sticky top-0 z-30 px-6 py-4 shadow-[0_2px_16px_0_rgba(6,19,55,0.03)]">
+      <div className="bg-white/95 border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-8 py-2 sm:py-4 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-[#159BEF] hover:text-[#7B3FF2] transition-colors flex items-center gap-2">
+          <Link href="/" className="min-h-11 text-sm font-medium text-slate-600 hover:text-slate-950 transition-colors flex items-center gap-2">
             <ChevronLeft size={16} /> Voltar para álbuns
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#061337]/60">Galeria Oficial</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-[#061337]/60">Galeria de fotos</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </div>
         </div>
       </div>
 
-      {/* Hero Header */}
-      <div className="relative h-[40vh] w-full overflow-hidden flex items-end">
-        {/* Background Cover Image blurred */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center filter blur-lg scale-105 opacity-15"
-          style={{ backgroundImage: `url(${album.coverImageUrl || '/placeholder.jpg'})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F6F8FC] via-[#F6F8FC]/40 to-transparent" />
-        
-        {/* Info */}
-        <div className="relative max-w-7xl mx-auto w-full px-6 pb-10 grid md:grid-cols-3 gap-6 items-end z-10">
-          <div className="md:col-span-2 space-y-3">
-            <h1 
-              className="text-3xl md:text-5xl font-black tracking-tight text-[#061337]"
-              style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}
-            >
-              {album.title}
-            </h1>
-            {album.description && (
-              <p className="text-slate-500 text-sm max-w-2xl leading-relaxed">{album.description}</p>
-            )}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              {album.promotionEnabled && album.promotionMinPhotos > 0 && album.promotionDiscountBps > 0 && (
-                <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-bold text-emerald-700 shadow-sm">
-                  Promo: {promotionPercent.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% OFF a partir de {album.promotionMinPhotos} fotos
-                </div>
-              )}
-              {album.eventDate && (
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#061337]/80 shadow-sm">
-                  <Calendar size={13} className="text-[#159BEF]" />
-                  <span>{new Date(album.eventDate).toLocaleDateString("pt-BR")}</span>
-                </div>
-              )}
-              {album.location && (
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#061337]/80 shadow-sm">
-                  <MapPin size={13} className="text-[#159BEF]" />
-                  <span className="truncate max-w-[200px]">{album.location}</span>
-                </div>
-              )}
+      <section className="mx-auto max-w-7xl px-4 pb-4 pt-5 sm:px-8 sm:pb-6 sm:pt-10">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <div className="min-w-0 max-w-3xl">
+            <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Álbum · {photos.length} fotos</p>
+            <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-4xl">{album.title}</h1>
+            {album.description && <p className="mt-3 text-sm leading-6 text-slate-600">{album.description}</p>}
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+              {album.eventDate && <span className="flex items-center gap-2"><Calendar size={15} />{new Date(album.eventDate).toLocaleDateString("pt-BR")}</span>}
+              {album.location && <span className="flex items-center gap-2"><MapPin size={15} className="shrink-0" />{album.location}</span>}
             </div>
           </div>
-
-          {/* Photographer Card */}
-          <div className="bg-white border border-slate-200/60 shadow-[0_4px_20px_rgba(6,19,55,0.04)] p-4 rounded-3xl flex items-center gap-4">
-            <div 
-              className="h-10 w-10 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm"
-              style={{ background: "linear-gradient(135deg, #159BEF, #7B3FF2)" }}
-            >
-              {album.photographer.avatarUrl ? (
-                <img src={album.photographer.avatarUrl} alt={album.photographer.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-xs font-bold">{album.photographer.name.substring(0, 2).toUpperCase()}</span>
-              )}
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-medium text-slate-600">
+              {album.photographer.avatarUrl ? <img src={album.photographer.avatarUrl} alt="" className="h-full w-full object-cover" /> : album.photographer.name.substring(0, 2).toUpperCase()}
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Fotógrafo</p>
-              <h4 className="text-sm font-bold text-[#061337] truncate">{album.photographer.name}</h4>
+            <div><p className="text-xs text-slate-500">Fotografia por</p><p className="text-sm font-medium">{album.photographer.name}</p></div>
+          </div>
+        </div>
+        {album.promotionEnabled && album.promotionMinPhotos > 0 && album.promotionDiscountBps > 0 && <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs sm:text-sm text-emerald-800">{promotionPercent.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% de desconto a partir de {album.promotionMinPhotos} fotos.</p>}
+        {videos.length > 0 && <a href="#videos" className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800">Ver vídeos ({videos.length})</a>}
+      </section>
+      <main id="fotos" className="mx-auto max-w-7xl px-4 pb-36 sm:px-8">
+        <div className="mb-4 flex flex-col gap-3 border-y border-slate-200 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <label className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 lg:w-80">
+            <Search size={17} className="shrink-0 text-slate-400" />
+            <span className="sr-only">Buscar foto pelo nome do arquivo</span>
+            <input type="search" value={photoQuery} onChange={(event) => { setPhotoQuery(event.target.value); setActivePhotoIndex(null); }} placeholder="Buscar pelo nome da foto" className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" />
+          </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" aria-pressed={selectedOnly} onClick={() => { setSelectedOnly(!selectedOnly); setActivePhotoIndex(null); }} className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium ${selectedOnly ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}><Check size={16} />Selecionadas ({selectedCount})</button>
+            <div className="flex rounded-lg border border-slate-200 bg-white p-1" role="group" aria-label="Tamanho das fotos">
+              <button type="button" aria-label="Grade compacta" aria-pressed={!largePhotos} onClick={() => setLargePhotos(false)} className={`flex h-10 w-10 items-center justify-center rounded-md ${!largePhotos ? "bg-slate-100 text-slate-950" : "text-slate-500"}`}><LayoutGrid size={18} /></button>
+              <button type="button" aria-label="Fotos maiores" aria-pressed={largePhotos} onClick={() => setLargePhotos(true)} className={`flex h-10 w-10 items-center justify-center rounded-md ${largePhotos ? "bg-slate-100 text-slate-950" : "text-slate-500"}`}><Grid2X2 size={18} /></button>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8 pb-32">
-        {/* Security Warning Notice */}
-        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-          <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={20} />
-          <p className="text-sm text-amber-800 font-medium leading-relaxed">
-            <strong>Aviso de Segurança:</strong> Qualquer tentativa de exportação, captura de tela ou cópia das fotos sem pagamento é detectada pelo sistema. Todas as imagens possuem um número de registro único e rastreável na plataforma para proteção de direitos autorais.
-          </p>
-        </div>
-
         {(album.folders.length > 0 || hasUnfolderedPhotos) && (
-          <div className="mb-6">
+          <div className="mb-3">
             <div
-              className="flex gap-2 overflow-x-auto pb-1"
+              className="flex gap-2 overflow-x-auto pb-2" aria-label="Pastas do álbum"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               <button
                 type="button"
+                aria-pressed={activeFolderId === "all"}
                 onClick={() => {
                   setActiveFolderId("all");
                   setActivePhotoIndex(null);
                 }}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                className={`flex shrink-0 items-center gap-1.5 min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
                   activeFolderId === "all"
-                    ? "text-white shadow-md"
+                    ? "text-white"
                     : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
                 }`}
-                style={activeFolderId === "all" ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
+                style={activeFolderId === "all" ? { background: "#0f172a" } : undefined}
               >
                 <Folder size={12} />
-                Todas
+                Todas ({photos.length})
               </button>
               {album.folders.map((folder) => (
                 <button
                   key={folder.id}
+                  aria-pressed={activeFolderId === folder.id}
                   type="button"
                   onClick={() => {
                     setActiveFolderId(folder.id);
                     setActivePhotoIndex(null);
                   }}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                  className={`flex shrink-0 items-center gap-1.5 min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     activeFolderId === folder.id
-                      ? "text-white shadow-md"
+                      ? "text-white"
                       : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
                   }`}
-                  style={activeFolderId === folder.id ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
+                  style={activeFolderId === folder.id ? { background: "#0f172a" } : undefined}
                 >
                   <Folder size={12} />
-                  {folder.name}
+                  {folder.name} ({photos.filter((photo) => photo.folderId === folder.id).length})
                 </button>
               ))}
               {hasUnfolderedPhotos && (
                 <button
                   type="button"
+                  aria-pressed={activeFolderId === null}
                   onClick={() => {
                     setActiveFolderId(null);
                     setActivePhotoIndex(null);
                   }}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                  className={`flex shrink-0 items-center gap-1.5 min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     activeFolderId === null
-                      ? "text-white shadow-md"
+                      ? "text-white"
                       : "bg-white text-[#061337] border border-slate-200 hover:border-slate-300"
                   }`}
-                  style={activeFolderId === null ? { background: "linear-gradient(90deg, #159BEF, #7B3FF2)" } : undefined}
+                  style={activeFolderId === null ? { background: "#0f172a" } : undefined}
                 >
                   <Folder size={12} />
-                  Sem pasta
+                  Sem pasta ({photos.filter((photo) => photo.folderId === null).length})
                 </button>
               )}
             </div>
           </div>
         )}
 
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <p role="status">{visiblePhotos.length} de {photos.length} fotos</p>
+          <p>Toque na foto para ampliar · Prévia com marca d’água</p>
+        </div>
         {visiblePhotos.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-slate-200/60 rounded-3xl space-y-4 shadow-sm">
-            <h3 className="text-lg font-bold text-[#061337]" style={{ fontFamily: "var(--font-poppins, Poppins, sans-serif)" }}>Nenhuma foto publicada</h3>
-            <p className="text-slate-400 max-w-sm mx-auto text-sm">
-              Este álbum ainda não possui fotos disponíveis para compra. Volte mais tarde.
-            </p>
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
+            <ImageIcon size={30} className="mx-auto mb-3 text-slate-400" />
+            <h2 className="text-lg font-semibold">{photos.length === 0 ? "Fotos em breve" : "Nenhuma foto nesta seleção"}</h2>
+            <p className="mt-2 text-sm text-slate-500">{photos.length === 0 ? "As fotos deste álbum ainda não estão disponíveis. Volte mais tarde." : "Experimente outra pasta, altere a busca ou veja todas as fotos."}</p>
+            {photos.length > 0 && <button type="button" onClick={() => { setPhotoQuery(""); setSelectedOnly(false); setActiveFolderId("all"); }} className="mt-5 min-h-11 rounded-lg border border-slate-200 px-4 text-sm font-medium">Ver todas as fotos</button>}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className={`grid gap-3 sm:gap-5 ${largePhotos ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}`}>
             {visiblePhotos.map((photo, index) => {
               const selected = isInCart(photo.id);
               return (
-                <div
-                  key={photo.id}
-                  className={`bg-white border rounded-2xl sm:rounded-[2rem] overflow-hidden flex flex-col justify-between group transition-all duration-300 relative shadow-sm ${
-                    selected ? "border-[#7B3FF2] ring-2 ring-[#7B3FF2]/20 -translate-y-0.5 sm:-translate-y-1" : "border-slate-200/60 hover:border-slate-350 hover:-translate-y-0.5 sm:hover:-translate-y-1"
-                  }`}
-                >
-                  {/* Preview Image Container */}
-                  <div className="aspect-square bg-slate-50 relative overflow-hidden cursor-pointer" onClick={() => setActivePhotoIndex(index)}>
-                    <img
-                      src={photo.previewUrl}
-                      alt={photo.originalFileName}
-                      className="photo-img w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 select-none"
-                    />
-
-                    {/* Favorite Photo Button */}
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
-                      <FavoriteButton
-                        type="photo"
-                        photo={{
-                          id: photo.id,
-                          originalFileName: photo.originalFileName,
-                          previewUrl: photo.previewUrl,
-                          price: photo.price,
-                          albumId: album.id,
-                          albumSlug: album.slug,
-                        }}
-                        className="bg-white/80 backdrop-blur-md hover:bg-white text-gray-800 shadow-sm"
-                      />
-                    </div>
-
-                    {/* Hover controls overlay - hidden on mobile touch */}
-                    <div className="hidden sm:flex absolute inset-0 bg-[#061337]/20 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePhotoIndex(index);
-                        }}
-                        className="h-10 w-10 rounded-full bg-white/95 text-[#061337] flex items-center justify-center hover:bg-white transition-all transform translate-y-2 group-hover:translate-y-0 duration-350 shadow-md"
-                      >
-                        <Eye size={18} />
-                      </button>
-                    </div>
-
-                    {/* Preço Tag */}
-                    <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-white/95 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-slate-200/50 text-[10px] sm:text-xs font-black text-[#061337] shadow-sm select-none">
-                      {formatCurrency(photo.price)}
-                    </div>
+                <article key={photo.id} className={`group overflow-hidden rounded-xl border bg-white ${selected ? "border-sky-600 ring-1 ring-sky-600" : "border-slate-200"}`}>
+                  <div className="relative aspect-[4/3] bg-slate-100">
+                    <button type="button" aria-label={`Ampliar foto ${photo.originalFileName}`} onClick={() => setActivePhotoIndex(index)} className="absolute inset-0 flex h-full w-full items-center justify-center">
+                      <img src={photo.previewUrl} alt={photo.originalFileName} loading="lazy" decoding="async" className="photo-img h-full w-full object-contain select-none" />
+                      <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-slate-700"><Eye size={16} /></span>
+                    </button>
+                    <div className="absolute right-2 top-2"><FavoriteButton type="photo" photo={{ id: photo.id, originalFileName: photo.originalFileName, previewUrl: photo.previewUrl, price: photo.price, albumId: album.id, albumSlug: album.slug }} className="min-h-10 min-w-10 bg-white/95 text-slate-600" size={17} /></div>
+                    {selected && <span className="pointer-events-none absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-sky-700 text-white" aria-label="No carrinho"><Check size={16} /></span>}
                   </div>
-
-                  {/* Buy Button */}
-                  <div className="p-2.5 sm:p-3.5 bg-white border-t border-slate-100">
-                    <button
-                      onClick={() => handleToggleCart(photo)}
-                      className={`w-full py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                        selected
-                          ? "text-white shadow-md shadow-[#7B3FF2]/10"
-                          : "bg-[#F6F8FC] hover:bg-slate-100 text-[#061337]/80 border border-slate-200/50"
-                      }`}
-                      style={selected ? {
-                        background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)"
-                      } : undefined}
-                    >
-                      {selected ? (
-                        <>
-                          <Check size={12} />
-                          <span>Selecionada</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart size={12} />
-                          <span>Selecionar</span>
-                        </>
-                      )}
+                  <div className="space-y-2.5 p-2.5 sm:p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"><p className="min-w-0 truncate text-xs text-slate-500" title={photo.originalFileName}>{photo.originalFileName}</p><p className="text-sm font-semibold">{formatCurrency(photo.price)}</p></div>
+                    <button type="button" aria-pressed={selected} aria-label={`${selected ? "Remover" : "Adicionar"} ${photo.originalFileName} ${selected ? "do" : "ao"} carrinho`} onClick={() => handleToggleCart(photo)} className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold sm:text-sm ${selected ? "bg-sky-50 text-sky-800 hover:bg-sky-100" : "bg-slate-900 text-white hover:bg-slate-700"}`}>
+                      {selected ? <Check size={15} /> : <ShoppingCart size={15} />}{selected ? "Selecionada" : "Selecionar"}
                     </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
         )}
       </main>
 
+      {videos.length > 0 && <section id="videos" className="mx-auto max-w-7xl px-4 pb-36 sm:px-8">
+        <div className="mb-5 border-t border-slate-200 pt-8"><h2 className="text-2xl font-semibold">Vídeos</h2><p className="mt-1 text-sm text-slate-500">Prévia com marca d&apos;água · preço independente das fotos</p></div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{videos.map((video) => {
+          const selected = isInCart(video.id);
+          return <article key={video.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white"><video src={video.previewUrl} controls controlsList="nodownload" preload="metadata" className="aspect-video w-full bg-black" onContextMenu={(event) => event.preventDefault()} /><div className="space-y-3 p-4"><div className="flex justify-between gap-3"><p className="truncate text-sm" title={video.originalFileName}>{video.originalFileName}</p><strong className="shrink-0 text-sm">{formatCurrency(video.price)}</strong></div><button type="button" onClick={() => selected ? removeFromCart(video.id) : addToCart(album.id, { ...video, type: "video" }, album.slug, promotion)} className={`min-h-11 w-full rounded-lg px-4 text-sm font-semibold ${selected ? "bg-sky-50 text-sky-800" : "bg-slate-900 text-white"}`}>{selected ? "Remover do carrinho" : "Adicionar vídeo ao carrinho"}</button></div></article>;
+        })}</div>
+      </section>}
+
       {/* Floating Cart Button & Checkout Shortcut */}
       {items.length > 0 && (
         <div 
-          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-md px-3 py-2.5 shadow-[0_-8px_30px_rgba(6,19,55,0.12)] flex items-center gap-3 transition-all animate-in fade-in slide-in-from-bottom-5 md:px-8 md:py-3"
+          className="gallery-cart-bar fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-slate-200 backdrop-blur-md px-3 py-2.5 flex items-center gap-3 transition-all animate-in fade-in slide-in-from-bottom-5 md:px-8 md:py-3"
         >
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-              {items.length} {items.length === 1 ? "foto selecionada" : "fotos selecionadas"}
+            <p className="text-xs text-slate-500 font-medium">
+              {items.length} {items.length === 1 ? "item selecionado" : "itens selecionados"}
             </p>
             <p className="truncate text-sm font-black text-[#061337] md:text-base">
               <span className="hidden sm:inline">{promotionApplied ? "Total com promo: " : "Subtotal: "}</span>
-              <span className="bg-gradient-to-r from-[#159BEF] to-[#7B3FF2] bg-clip-text text-transparent">{formatCurrency(totalAmount)}</span>
+              <span className="text-slate-950">{formatCurrency(totalAmount)}</span>
             </p>
             {promotionApplied && (
               <p className="text-[11px] font-semibold text-emerald-600">
@@ -431,16 +373,16 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
           <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#061337] font-bold py-2.5 px-3 rounded-2xl text-xs transition-all md:px-4"
+              className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#061337] font-semibold min-h-11 py-2.5 px-3 rounded-lg text-xs transition-all md:px-4"
             >
               Ver Carrinho
             </button>
             <Link
               href={checkoutHref}
-              className="flex items-center justify-center gap-2 text-white font-bold py-2.5 px-3 rounded-2xl text-xs shadow-md transition-all hover:opacity-95 md:px-5"
+              className="flex items-center justify-center gap-2 text-white font-semibold min-h-11 py-2.5 px-3 rounded-lg text-xs shadow-md transition-all hover:opacity-95 md:px-5"
               style={{
-                background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)",
-                boxShadow: "0 10px 20px -5px rgba(123, 63, 242, 0.3)",
+                background: "#0f172a",
+                boxShadow: "none",
               }}
             >
               <span className="hidden sm:inline">Finalizar </span>Compra <ArrowRight size={14} />
@@ -454,27 +396,34 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
 
       {/* Lightbox / Modal de Foto Ampliada */}
       {activePhotoIndex !== null && activePhoto && (
-        <div className="fixed inset-0 bg-black/95 z-[110] flex flex-col md:flex-row items-stretch justify-between">
+        <dialog ref={viewerRef} aria-label="Visualização ampliada da foto" onCancel={(event) => { event.preventDefault(); setActivePhotoIndex(null); }} onKeyDown={(event) => {
+          if (event.key === "Escape") { event.preventDefault(); setActivePhotoIndex(null); }
+          if (event.key === "ArrowLeft") { event.preventDefault(); setActivePhotoIndex((current) => current === null ? null : (current - 1 + visiblePhotos.length) % visiblePhotos.length); }
+          if (event.key === "ArrowRight") { event.preventDefault(); setActivePhotoIndex((current) => current === null ? null : (current + 1) % visiblePhotos.length); }
+        }} className="gallery-viewer fixed inset-0 m-0 flex h-dvh max-h-none w-screen max-w-none flex-col items-stretch justify-between bg-[#101114] text-white md:flex-row">
+          <p className="absolute left-4 top-4 z-20 text-xs text-white/70" role="status">{activePhotoIndex + 1} / {visiblePhotos.length}<span className="ml-3 hidden md:inline">Use ← → para navegar · Esc para fechar</span></p>
           {/* Close button */}
           <button
+            aria-label="Fechar foto ampliada"
             onClick={() => setActivePhotoIndex(null)}
-            className="absolute top-3 right-3 md:top-4 md:right-4 z-50 h-9 w-9 md:h-10 md:w-10 rounded-full bg-zinc-900/80 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors"
+            className="absolute top-3 right-3 md:top-4 md:right-4 z-50 h-11 w-11 rounded-full bg-zinc-900/80 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors"
           >
             <X size={18} />
           </button>
 
           {/* Main viewer (image) */}
-          <div className="flex-1 flex items-center justify-center relative p-4 md:p-6">
+          <div className="min-h-0 flex-1 flex items-center justify-center relative px-3 pb-3 pt-14 sm:px-12 md:px-16 md:py-14">
             {/* Nav Prev */}
             <button
+              aria-label="Foto anterior"
               onClick={handlePrevPhoto}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 h-9 w-9 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 h-11 w-11 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-20"
             >
               <ChevronLeft size={20} />
             </button>
 
             {/* Images Container */}
-            <div className="relative flex items-center justify-center max-h-[55vh] md:max-h-[80vh] w-full h-[55vh] md:h-[80vh] max-w-full overflow-hidden">
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
               {visiblePhotos.map((photo, index) => {
                 const isCurrent = index === activePhotoIndex;
                 const isPrev = index === (activePhotoIndex === 0 ? visiblePhotos.length - 1 : activePhotoIndex! - 1);
@@ -487,9 +436,10 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                 return (
                   <img
                     key={photo.id}
+                    aria-hidden={!isCurrent}
                     src={photo.previewUrl}
                     alt={photo.originalFileName}
-                    className={`absolute photo-img max-h-[55vh] md:max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl select-none ${
+                    className={`absolute photo-img h-full w-full object-contain select-none ${
                       isCurrent ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                     }`}
                     onContextMenu={(e) => e.preventDefault()}
@@ -500,15 +450,16 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
 
             {/* Nav Next */}
             <button
+              aria-label="Próxima foto"
               onClick={handleNextPhoto}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 h-9 w-9 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-10"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 h-11 w-11 md:h-12 md:w-12 rounded-full bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors z-20"
             >
               <ChevronRight size={20} />
             </button>
           </div>
 
           {/* Detail Panel — bottom on mobile, right side on md+ */}
-          <div className="w-full md:w-80 bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-800 p-4 md:p-6 flex flex-col md:justify-between text-white">
+          <div className="gallery-viewer-details shrink-0 w-full md:w-80 bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-800 p-4 md:p-6 flex flex-col md:justify-between text-white">
             {/* Mobile: horizontal layout */}
             <div className="flex md:block items-center justify-between gap-3 md:space-y-6">
               <div className="min-w-0 flex-1">
@@ -537,7 +488,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     isInCart(activePhoto.id) ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "text-white"
                   }`}
                   style={!isInCart(activePhoto.id) ? {
-                    background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)",
+                    background: "#0f172a",
                   } : undefined}
                 >
                   {isInCart(activePhoto.id) ? <><Check size={13} /> Selecionada</> : <><ShoppingCart size={13} /> Adicionar</>}
@@ -555,8 +506,8 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
                     : "text-white shadow-lg"
                 }`}
                 style={!isInCart(activePhoto.id) ? {
-                  background: "linear-gradient(90deg, #159BEF 0%, #7B3FF2 100%)",
-                  boxShadow: "0 10px 20px -5px rgba(123, 63, 242, 0.3)",
+                  background: "#0f172a",
+                  boxShadow: "none",
                 } : undefined}
               >
                 {isInCart(activePhoto.id) ? (
@@ -587,7 +538,7 @@ export function PhotoGallery({ album, photos }: PhotoGalleryProps) {
               </Link>
             )}
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

@@ -9,7 +9,7 @@ export function SiteFooter() {
     >
       <div
         className="container mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm md:flex-row"
-        style={{ color: "#9ca3af" }}
+        style={{ color: "#64748b" }}
       >
         <div className="flex items-center gap-2">
           <Image
@@ -38,9 +38,9 @@ export function SiteFooter() {
           <Link
             href="/dashboard"
             className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-[#159BEF]/30 hover:text-[#159BEF]"
-            style={{ color: "#9ca3af", borderColor: "#e5e7eb" }}
+            style={{ color: "#64748b", borderColor: "#e5e7eb" }}
           >
-            Area do Fotografo &rarr;
+            Área do fotógrafo &rarr;
           </Link>
         </div>
       </div>
