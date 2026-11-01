@@ -11,9 +11,11 @@ RUN npm ci
 COPY . .
 
 ENV NODE_ENV=production
-ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=2048
+
+ARG PORT=3000
+ENV PORT=$PORT
 
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -26,6 +28,6 @@ ENV NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY=$NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
 ARG BUILD_ID=local
 RUN --mount=type=secret,id=env_production,target=/app/.env.production,required=false npm run build
 
-EXPOSE 3000
+EXPOSE $PORT
 
-CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]
+CMD ["npm", "run", "start", "--", "-H", "0.0.0.0"]
